@@ -91,12 +91,12 @@ describe("AddInteractionScreen", () => {
     renderHarness(
       {
         ...createEmptyInteractionDraft(),
-        companyName: "Snowflake",
+        companyName: "ExampleCo",
         contacts: [
           createInteractionContact({
             firstName: "First",
             lastName: "Last",
-            companyName: "Snowflake",
+            companyName: "ExampleCo",
           }),
         ],
       },
@@ -111,7 +111,7 @@ describe("AddInteractionScreen", () => {
 
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
-        companyName: "Snowflake",
+        companyName: "ExampleCo",
         participants: ["First Last"],
         features: ["ETL", "terraform"],
         platformInterests: ["snowflake"],

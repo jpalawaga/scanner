@@ -7,7 +7,7 @@ import { HomeScreen } from "./HomeScreen";
 const buildInteraction = (overrides: Partial<Interaction> = {}): Interaction => ({
   id: "interaction-1",
   companyName: "Acme Corp",
-  participants: ["First Contact", "Second Contact"],
+  participants: ["First Last", "Second Contact"],
   contacts: [],
   date: "2026-06-03T09:30:00.000Z",
   meetingSet: false,
@@ -77,7 +77,7 @@ describe("HomeScreen", () => {
       />,
     );
 
-    await user.type(screen.getByPlaceholderText("Search company or participant"), "jordan");
+    await user.type(screen.getByPlaceholderText("Search company or participant"), "second");
 
     expect(screen.getByText("Databricks")).toBeInTheDocument();
     expect(screen.queryByText("Snowflake")).not.toBeInTheDocument();

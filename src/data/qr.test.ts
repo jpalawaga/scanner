@@ -28,9 +28,9 @@ describe("parseQrContact", () => {
 
   it("reads company and participant from URL query content", () => {
     expect(
-      parseQrContact("https://event.example/badge?firstName=First&lastName=Last&company=Snowflake"),
+      parseQrContact("https://event.example/badge?firstName=First&lastName=Last&company=ExampleCo"),
     ).toMatchObject({
-      companyName: "Snowflake",
+      companyName: "ExampleCo",
       participants: ["First Last"],
     });
   });
@@ -39,13 +39,13 @@ describe("parseQrContact", () => {
     expect(
       parseQrContact(
         JSON.stringify({
-          companyName: "Databricks",
-          participants: [{ firstName: "Second", lastName: "Contact" }],
+          companyName: "ExampleCo",
+          participants: [{ firstName: "First", lastName: "Last" }],
         }),
       ),
     ).toMatchObject({
-      companyName: "Databricks",
-      participants: ["Second Contact"],
+      companyName: "ExampleCo",
+      participants: ["First Last"],
     });
   });
 });
