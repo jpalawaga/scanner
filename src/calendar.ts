@@ -53,33 +53,88 @@ export function createGoogleCalendarUrl(draft: InteractionDraft) {
 function createCalendarEventDetails(draft: InteractionDraft): CalendarEventDetails {
   const startsAt = roundToNextHalfHour(new Date());
   const endsAt = new Date(startsAt.getTime() + 30 * 60 * 1000);
-  const title = `Meeting with ${draft.companyName.trim() || "new contact"}`;
-  const participantDetails = getParticipantDetails(draft);
-  const descriptionParts = [
-    participantDetails.length > 0 ? `Participants: ${participantDetails.join(", ")}` : "",
-    draft.features.length > 0 ? `Features: ${draft.features.join(", ")}` : "",
-    draft.platformInterests.length > 0 ? `Platforms: ${draft.platformInterests.join(", ")}` : "",
-  ].filter(Boolean);
+
+  const company = draft.companyName.trim() || "your team";
+  const features = normalizeStringList(draft.features);
+  const platforms = normalizeStringList(draft.platformInterests).map(capitalize);
 
   return {
     startsAt,
     endsAt,
-    title,
-    descriptionParts,
+    title: buildTitle(company, features[0], platforms[0]),
+    descriptionParts: buildDescription(draft, features, platforms),
     guestEmails: getGuestEmails(draft.contacts),
   };
 }
 
-function getParticipantDetails(draft: InteractionDraft) {
-  if (draft.contacts.length === 0) {
-    return normalizeStringList(draft.participants);
+// e.g. "Polytomic / Acme: ETL w/ Snowflake"
+function buildTitle(company: string, feature?: string, platform?: string) {
+  let title = `Polytomic / ${company}`;
+
+  if (feature) {
+    title += `: ${feature}`;
+
+    if (platform) {
+      title += ` w/ ${platform}`;
+    }
   }
 
-  return draft.contacts.map((contact) => {
-    const contactName = getContactDisplayName(contact) || "Unnamed contact";
+  return title;
+}
 
-    return contact.email ? `${contactName} <${contact.email}>` : contactName;
-  });
+function buildDescription(draft: InteractionDraft, features: string[], platforms: string[]) {
+  const greetingName = getGreetingName(draft);
+  const topics = buildTopicsClause(features, platforms);
+
+  return [
+    `Hi ${greetingName},`,
+    "",
+    `Great connecting! It was good to chat${topics}. I'd love to grab some time to walk` +
+      " you through more of what Polytomic can do and to understand your needs a bit better.",
+    "",
+    "Would something in the next week or two work? Looking forward to it.",
+  ];
+}
+
+function buildTopicsClause(features: string[], platforms: string[]) {
+  const featurePhrase = joinNatural(features);
+  const platformPhrase = joinNatural(platforms);
+
+  if (featurePhrase && platformPhrase) {
+    return ` about ${featurePhrase} with ${platformPhrase}`;
+  }
+
+  if (featurePhrase) {
+    return ` about ${featurePhrase}`;
+  }
+
+  if (platformPhrase) {
+    return ` about your ${platformPhrase} setup`;
+  }
+
+  return "";
+}
+
+function getGreetingName(draft: InteractionDraft) {
+  const names = draft.contacts.map(getContactDisplayName).filter(Boolean);
+
+  return names.length === 1 ? names[0].split(" ")[0] : "there";
+}
+
+function joinNatural(items: string[]) {
+  if (items.length <= 1) {
+    return items[0] ?? "";
+  }
+
+  if (items.length === 2) {
+    return `${items[0]} and ${items[1]}`;
+  }
+
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+function capitalize(value: string) {
+  return value.charAt(0).toLocaleUpperCase() + value.slice(1);
 }
 
 function getGuestEmails(contacts: InteractionContact[]) {

@@ -20,8 +20,9 @@ describe("createCalendarEventFile", () => {
     });
 
     expect(calendarFile).toContain("BEGIN:VCALENDAR");
-    expect(calendarFile).toContain("SUMMARY:Meeting with ExampleCo");
-    expect(calendarFile).toContain("Participants: First Last <first.last@example.test>\\nFeatures: ETL\\nPlatforms: snowflake");
+    expect(calendarFile).toContain("SUMMARY:Polytomic / ExampleCo: ETL w/ Snowflake");
+    expect(calendarFile).toContain("Hi First");
+    expect(calendarFile).toContain("chat about ETL with Snowflake");
   });
 
   it("creates a Google Calendar URL with participants as guests", () => {
@@ -50,10 +51,13 @@ describe("createCalendarEventFile", () => {
     expect(parsedUrl.origin).toBe("https://calendar.google.com");
     expect(parsedUrl.pathname).toBe("/calendar/render");
     expect(parsedUrl.searchParams.get("action")).toBe("TEMPLATE");
-    expect(parsedUrl.searchParams.get("text")).toBe("Meeting with ExampleCo");
-    expect(parsedUrl.searchParams.get("details")).toBe(
-      "Participants: First Last <first.last@example.test>, Second Contact <second.contact@example.test>\nFeatures: ETL\nPlatforms: snowflake",
-    );
+    expect(parsedUrl.searchParams.get("text")).toBe("Polytomic / ExampleCo: ETL w/ Snowflake");
+
+    const details = parsedUrl.searchParams.get("details") ?? "";
+    expect(details).toContain("Hi there,");
+    expect(details).toContain("chat about ETL with Snowflake");
+    expect(details).toContain("Polytomic can do");
+
     expect(parsedUrl.searchParams.get("dates")).toMatch(/^\d{8}T\d{6}Z\/\d{8}T\d{6}Z$/);
     expect(parsedUrl.searchParams.getAll("add")).toEqual([
       "first.last@example.test",
