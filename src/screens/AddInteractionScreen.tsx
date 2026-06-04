@@ -1,14 +1,14 @@
 import {
-  ArrowLeft,
   CalendarPlus,
   Camera,
   Check,
+  ChevronLeft,
   Plus,
   Trash2,
   UserPlus,
 } from "lucide-react";
 import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createGoogleCalendarUrl, downloadCalendarEvent } from "../calendar";
 import {
   createInteractionContact,
@@ -50,6 +50,18 @@ export function AddInteractionScreen({
   const customFeatures = draft.features.filter((feature) => !KNOWN_FEATURES.has(feature));
   const normalizedCompanyName = draft.companyName.trim();
   const canSave = normalizedCompanyName.length > 0;
+  const companyNameRef = useRef<HTMLTextAreaElement>(null);
+
+  // The company name is a hero heading that wraps for long names, so grow the
+  // textarea to fit its content instead of scrolling.
+  useLayoutEffect(() => {
+    const element = companyNameRef.current;
+
+    if (element) {
+      element.style.height = "auto";
+      element.style.height = `${element.scrollHeight}px`;
+    }
+  }, [draft.companyName]);
   const allPlatformOptions = useMemo(
     () =>
       normalizeStringList([
@@ -160,24 +172,32 @@ export function AddInteractionScreen({
   return (
     <main className="min-h-dvh bg-slate-50 text-slate-950">
       <form className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-4 py-5 sm:px-6" onSubmit={handleSubmit}>
-        <header className="flex items-center">
+        <header className="-ml-1 flex items-center gap-2">
           <button
             aria-label="Back"
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm"
+            className="flex h-8 w-8 items-center justify-center text-slate-400 hover:text-slate-700"
             onClick={onBack}
             type="button"
           >
-            <ArrowLeft aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+            <ChevronLeft aria-hidden="true" className="h-6 w-6" strokeWidth={2.25} />
           </button>
+          <span className="text-sm font-medium text-slate-500">New interaction</span>
         </header>
 
-        <div className="mt-6">
-          <p className="text-sm font-medium text-slate-500">New interaction</p>
-          <input
+        <div className="mt-4">
+          <textarea
             aria-label="Company name"
-            className="mt-1 w-full border-b border-dashed border-slate-300 bg-transparent pb-1 text-2xl font-semibold tracking-tight text-slate-950 caret-slate-900 outline-none placeholder:font-normal placeholder:text-slate-300 focus:border-solid focus:border-slate-500"
+            className="w-full resize-none bg-transparent text-3xl font-bold leading-tight tracking-tight text-slate-950 caret-slate-900 outline-none placeholder:font-semibold placeholder:text-slate-300"
             onChange={(event) => updateDraft({ companyName: event.target.value })}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
             placeholder="Company name"
+            ref={companyNameRef}
+            rows={1}
             value={draft.companyName}
           />
         </div>
@@ -185,21 +205,21 @@ export function AddInteractionScreen({
         <section className="mt-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-slate-700">Participants</h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
-                className="flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm"
+                className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-sm font-medium text-slate-600 hover:text-slate-900"
                 onClick={addManualContact}
                 type="button"
               >
-                <UserPlus aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
+                <UserPlus aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
                 Add
               </button>
               <button
-                className="flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm"
+                className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-sm font-medium text-slate-600 hover:text-slate-900"
                 onClick={onScanParticipant}
                 type="button"
               >
-                <Camera aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
+                <Camera aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
                 Scan
               </button>
             </div>
@@ -259,9 +279,7 @@ export function AddInteractionScreen({
                 );
               })
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
-                No participants yet — scan a badge or add one manually.
-              </div>
+              <p className="px-1 py-2 text-sm text-slate-400">No participants yet.</p>
             )}
           </div>
         </section>
