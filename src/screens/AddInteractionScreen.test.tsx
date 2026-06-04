@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -74,7 +74,8 @@ describe("AddInteractionScreen", () => {
 
     renderHarness({ ...createEmptyInteractionDraft(), companyName: "ExampleCo" }, onSave);
 
-    await user.click(screen.getByRole("button", { name: "Other" }));
+    const featuresGroup = screen.getByRole("group", { name: "Features of interest" });
+    await user.click(within(featuresGroup).getByRole("button", { name: "Other" }));
     await user.type(screen.getByPlaceholderText("Add a feature"), "data residency");
     await user.click(screen.getByRole("button", { name: "Add feature" }));
 
@@ -178,7 +179,6 @@ describe("AddInteractionScreen", () => {
 
     await user.click(screen.getByRole("checkbox", { name: "ETL" }));
     await user.click(screen.getByRole("checkbox", { name: "terraform" }));
-    await user.type(screen.getByPlaceholderText("Search platforms"), "snow");
     await user.click(screen.getByRole("checkbox", { name: "snowflake" }));
     await user.click(screen.getByRole("button", { name: "Done" }));
 
@@ -192,7 +192,7 @@ describe("AddInteractionScreen", () => {
     );
   });
 
-  it("adds custom platform options from the search text", async () => {
+  it("adds a custom integration via the Other field", async () => {
     const user = userEvent.setup();
     const onAddPlatformOption = vi.fn();
 
@@ -205,11 +205,12 @@ describe("AddInteractionScreen", () => {
       onAddPlatformOption,
     );
 
-    await user.type(screen.getByPlaceholderText("Search platforms"), "oracle");
-    await user.click(screen.getByRole("button", { name: "Add platform option" }));
+    const integrationGroup = screen.getByRole("group", { name: "Integration interest" });
+    await user.click(within(integrationGroup).getByRole("button", { name: "Other" }));
+    await user.type(screen.getByPlaceholderText("Add an integration"), "oracle");
+    await user.click(screen.getByRole("button", { name: "Add integration" }));
 
     expect(onAddPlatformOption).toHaveBeenCalledWith("oracle");
     expect(screen.getByRole("checkbox", { name: "oracle" })).toBeChecked();
-    expect(screen.getByPlaceholderText("Search platforms")).toHaveValue("");
   });
 });

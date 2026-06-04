@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { createGoogleCalendarUrl, downloadCalendarEvent } from "../calendar";
+import { createGoogleCalendarUrl, createMailtoUrl } from "../calendar";
 import {
   createInteractionContact,
   DEFAULT_PLATFORM_OPTIONS,
@@ -48,6 +48,7 @@ export function AddInteractionScreen({
   const [calendarStatus, setCalendarStatus] = useState("");
   const [featureQuery, setFeatureQuery] = useState("");
   const [isAddingFeature, setIsAddingFeature] = useState(false);
+  const [isAddingPlatform, setIsAddingPlatform] = useState(false);
   const customFeatures = draft.features.filter((feature) => !KNOWN_FEATURES.has(feature));
   const normalizedCompanyName = draft.companyName.trim();
   const canSave = normalizedCompanyName.length > 0;
@@ -71,6 +72,17 @@ export function AddInteractionScreen({
         ...draft.platformInterests,
       ]).map((option) => option.toLocaleLowerCase()),
     [availablePlatformOptions, draft.platformInterests],
+  );
+  // Selected integrations float to the front (stable within each group).
+  const sortedPlatformOptions = useMemo(
+    () =>
+      [...allPlatformOptions].sort((first, second) => {
+        const firstSelected = draft.platformInterests.includes(first) ? 0 : 1;
+        const secondSelected = draft.platformInterests.includes(second) ? 0 : 1;
+
+        return firstSelected - secondSelected;
+      }),
+    [allPlatformOptions, draft.platformInterests],
   );
 
   function updateDraft(updates: Partial<InteractionDraft>) {
@@ -125,27 +137,20 @@ export function AddInteractionScreen({
         ? draft.platformInterests.filter((selectedPlatform) => selectedPlatform !== platform)
         : [...draft.platformInterests, platform],
     });
-    setPlatformQuery("");
   }
 
   function addPlatformFromQuery() {
     const platform = platformQuery.trim().toLocaleLowerCase();
 
-    if (!platform) {
-      return;
+    if (platform) {
+      onAddPlatformOption(platform);
+      updateDraft({
+        platformInterests: normalizeStringList([...draft.platformInterests, platform]),
+      });
     }
 
-    onAddPlatformOption(platform);
-    updateDraft({
-      platformInterests: normalizeStringList([...draft.platformInterests, platform]),
-    });
     setPlatformQuery("");
-  }
-
-  function handleCalendarDownload() {
-    downloadCalendarEvent(draft);
-    updateDraft({ calendarEventCreated: true });
-    setCalendarStatus("Calendar file created");
+    setIsAddingPlatform(false);
   }
 
   function handleGoogleCalendarOpen() {
@@ -358,53 +363,74 @@ export function AddInteractionScreen({
           ) : null}
         </fieldset>
 
-        <section className="mt-6">
-          <h2 className="text-sm font-semibold text-slate-700">Platform interest</h2>
-          <div className="mt-2 flex gap-2">
-            <label className="min-w-0 flex-1">
-              <span className="sr-only">Search platform interest</span>
-              <input
-                className="min-h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-base text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                onChange={(event) => setPlatformQuery(event.target.value)}
-                placeholder="Search platforms"
-                type="search"
-                value={platformQuery}
-              />
-            </label>
+        <fieldset className="mt-6">
+          <legend className="text-sm font-semibold text-slate-700">Integration interest</legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {sortedPlatformOptions.map((platform) => {
+              const isSelected = draft.platformInterests.includes(platform);
+
+              return (
+                <label
+                  className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-full border px-3 text-sm font-semibold ${
+                    isSelected
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+                      : "border-slate-200 bg-white text-slate-700"
+                  }`}
+                  key={platform}
+                >
+                  <input
+                    checked={isSelected}
+                    className="sr-only"
+                    onChange={() => togglePlatform(platform)}
+                    type="checkbox"
+                  />
+                  {isSelected ? <Check aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} /> : null}
+                  {platform}
+                </label>
+              );
+            })}
+
             <button
-              aria-label="Add platform option"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm disabled:text-slate-300"
-              disabled={!platformQuery.trim()}
-              onClick={addPlatformFromQuery}
+              aria-expanded={isAddingPlatform}
+              className="flex min-h-10 items-center gap-2 rounded-full border border-dashed border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
+              onClick={() => setIsAddingPlatform((value) => !value)}
               type="button"
             >
-              <Plus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+              <Plus aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
+              Other
             </button>
           </div>
 
-          <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-            {allPlatformOptions
-              .filter((platform) => platform.includes(platformQuery.trim().toLocaleLowerCase()))
-              .map((platform) => {
-                const isSelected = draft.platformInterests.includes(platform);
-
-                return (
-                  <label
-                    className="flex min-h-12 cursor-pointer items-center justify-between gap-3 border-b border-slate-100 px-3 last:border-b-0"
-                    key={platform}
-                  >
-                    <span className="text-sm font-medium text-slate-800">{platform}</span>
-                    <input
-                      checked={isSelected}
-                      className="h-5 w-5 accent-emerald-600"
-                      onChange={() => togglePlatform(platform)}
-                      type="checkbox"
-                    />
-                  </label>
-                );
-              })}
-          </div>
-        </section>
+          {isAddingPlatform ? (
+            <div className="mt-2 flex gap-2">
+              <label className="min-w-0 flex-1">
+                <span className="sr-only">Other integration</span>
+                <input
+                  autoFocus
+                  className="min-h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-base text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  onChange={(event) => setPlatformQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addPlatformFromQuery();
+                    }
+                  }}
+                  placeholder="Add an integration"
+                  value={platformQuery}
+                />
+              </label>
+              <button
+                aria-label="Add integration"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm disabled:text-slate-300"
+                disabled={!platformQuery.trim()}
+                onClick={addPlatformFromQuery}
+                type="button"
+              >
+                <Plus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+              </button>
+            </div>
+          ) : null}
+        </fieldset>
 
         <div className="mt-6 space-y-3">
           <button
@@ -416,15 +442,17 @@ export function AddInteractionScreen({
             <CalendarPlus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
             Google Calendar
           </button>
-          <button
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 shadow-sm disabled:text-slate-300"
-            disabled={!canSave}
-            onClick={handleCalendarDownload}
-            type="button"
+          <a
+            aria-disabled={!canSave}
+            className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-base font-semibold shadow-sm ${
+              canSave ? "text-slate-700" : "pointer-events-none text-slate-300"
+            }`}
+            href={canSave ? createMailtoUrl(draft) : undefined}
+            onClick={() => setCalendarStatus("Email draft opened")}
           >
-            <CalendarPlus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
-            Download .ics
-          </button>
+            <Mail aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+            Email
+          </a>
           {calendarStatus ? (
             <p aria-live="polite" className="text-center text-sm font-medium text-emerald-700">
               {calendarStatus}

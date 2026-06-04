@@ -13,25 +13,16 @@ type CalendarEventDetails = {
   guestEmails: string[];
 };
 
-export function createCalendarEventFile(draft: InteractionDraft) {
+// Prefilled email mirroring the calendar invite: subject = event title,
+// body = the same prose, recipients = participant emails.
+export function createMailtoUrl(draft: InteractionDraft) {
   const eventDetails = createCalendarEventDetails(draft);
+  const query = [
+    `subject=${encodeURIComponent(eventDetails.title)}`,
+    `body=${encodeURIComponent(eventDetails.descriptionParts.join("\n"))}`,
+  ].join("&");
 
-  return [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Scanner//Interactions//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    "BEGIN:VEVENT",
-    `UID:${createEventId()}`,
-    `DTSTAMP:${formatIcsDate(new Date())}`,
-    `DTSTART:${formatIcsDate(eventDetails.startsAt)}`,
-    `DTEND:${formatIcsDate(eventDetails.endsAt)}`,
-    `SUMMARY:${escapeIcsText(eventDetails.title)}`,
-    `DESCRIPTION:${escapeIcsText(eventDetails.descriptionParts.join("\n"))}`,
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
+  return `mailto:${eventDetails.guestEmails.join(",")}?${query}`;
 }
 
 export function createGoogleCalendarUrl(draft: InteractionDraft) {
@@ -141,21 +132,6 @@ function getGuestEmails(contacts: InteractionContact[]) {
   return normalizeStringList(contacts.map((contact) => contact.email));
 }
 
-export function downloadCalendarEvent(draft: InteractionDraft) {
-  const calendarFile = createCalendarEventFile(draft);
-  const blob = new Blob([calendarFile], { type: "text/calendar;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = `${slugify(draft.companyName || "scanner-meeting")}.ics`;
-  link.rel = "noopener";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
 function formatIcsDate(date: Date) {
   return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 }
@@ -174,21 +150,3 @@ function roundToNextHalfHour(date: Date) {
   return rounded;
 }
 
-function escapeIcsText(value: string) {
-  return value.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
-}
-
-function slugify(value: string) {
-  return value
-    .toLocaleLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-function createEventId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${crypto.randomUUID()}@scanner.local`;
-  }
-
-  return `scanner-${Date.now()}@scanner.local`;
-}

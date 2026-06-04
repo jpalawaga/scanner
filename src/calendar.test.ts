@@ -1,30 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createCalendarEventFile, createGoogleCalendarUrl } from "./calendar";
+import { createGoogleCalendarUrl, createMailtoUrl } from "./calendar";
 import { createEmptyInteractionDraft, createInteractionContact } from "./data/interactions";
 
-describe("createCalendarEventFile", () => {
-  it("includes meeting title and escaped details", () => {
-    const calendarFile = createCalendarEventFile({
-      ...createEmptyInteractionDraft(),
-      companyName: "ExampleCo",
-      contacts: [
-        createInteractionContact({
-          firstName: "First",
-          lastName: "Last",
-          companyName: "ExampleCo",
-          email: "first.last@example.test",
-        }),
-      ],
-      features: ["ETL"],
-      platformInterests: ["snowflake"],
-    });
-
-    expect(calendarFile).toContain("BEGIN:VCALENDAR");
-    expect(calendarFile).toContain("SUMMARY:Polytomic / ExampleCo: ETL w/ Snowflake");
-    expect(calendarFile).toContain("Hi First");
-    expect(calendarFile).toContain("chat about ETL with Snowflake");
-  });
-
+describe("createGoogleCalendarUrl", () => {
   it("creates a Google Calendar URL with participants as guests", () => {
     const calendarUrl = createGoogleCalendarUrl({
       ...createEmptyInteractionDraft(),
@@ -63,5 +41,31 @@ describe("createCalendarEventFile", () => {
       "first.last@example.test",
       "second.contact@example.test",
     ]);
+  });
+});
+
+describe("createMailtoUrl", () => {
+  it("builds a mailto with subject, body, and recipients matching the invite", () => {
+    const mailtoUrl = createMailtoUrl({
+      ...createEmptyInteractionDraft(),
+      companyName: "ExampleCo",
+      contacts: [
+        createInteractionContact({
+          firstName: "First",
+          lastName: "Last",
+          companyName: "ExampleCo",
+          email: "first.last@example.test",
+        }),
+      ],
+      features: ["ETL"],
+      platformInterests: ["snowflake"],
+    });
+
+    expect(mailtoUrl.startsWith("mailto:first.last@example.test?")).toBe(true);
+
+    const query = new URLSearchParams(mailtoUrl.slice(mailtoUrl.indexOf("?") + 1));
+    expect(query.get("subject")).toBe("Polytomic / ExampleCo: ETL w/ Snowflake");
+    expect(query.get("body")).toContain("Hi First,");
+    expect(query.get("body")).toContain("chat about ETL with Snowflake");
   });
 });
