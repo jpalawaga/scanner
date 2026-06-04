@@ -14,4 +14,15 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Scan QR code" })).toBeInTheDocument();
     expect(await screen.findByText("Camera unavailable")).toBeInTheDocument();
   });
+
+  it("opens manual entry without scanning", async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Enter manually" }));
+
+    expect(screen.getByText("New interaction")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Company name" })).toBeInTheDocument();
+  });
 });

@@ -39,12 +39,52 @@ describe("AddInteractionScreen", () => {
       ],
     });
 
-    expect(screen.getByRole("heading", { name: "New Interaction" })).toBeInTheDocument();
-    expect(screen.getByDisplayValue("ExampleCo")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "First Last" })).toBeInTheDocument();
-    expect(screen.getByText("ExampleCo")).toBeInTheDocument();
+    expect(screen.getByText("New interaction")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Company name" })).toHaveValue("ExampleCo");
+    expect(screen.getByRole("textbox", { name: "Name for First Last" })).toHaveValue("First Last");
+    expect(screen.getByRole("textbox", { name: "Company for First Last" })).toHaveValue("ExampleCo");
     expect(screen.getByRole("textbox", { name: "Email for First Last" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Scan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add" })).toBeInTheDocument();
+  });
+
+  it("adds a manual participant with name and company", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+
+    renderHarness({ ...createEmptyInteractionDraft(), companyName: "ExampleCo" }, onSave);
+
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    await user.type(screen.getByRole("textbox", { name: "Name for participant 1" }), "Jordan Lee");
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        participants: ["Jordan Lee"],
+        contacts: [
+          expect.objectContaining({ firstName: "Jordan Lee", lastName: "", companyName: "ExampleCo" }),
+        ],
+      }),
+    );
+  });
+
+  it("adds a custom feature via the Other field", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+
+    renderHarness({ ...createEmptyInteractionDraft(), companyName: "ExampleCo" }, onSave);
+
+    await user.click(screen.getByRole("button", { name: "Other" }));
+    await user.type(screen.getByPlaceholderText("Add a feature"), "data residency");
+    await user.click(screen.getByRole("button", { name: "Add feature" }));
+
+    expect(screen.getByRole("checkbox", { name: "data residency" })).toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ features: ["data residency"] }),
+    );
   });
 
   it("saves contact email edits", async () => {

@@ -31,6 +31,9 @@ export type InteractionContact = {
   email: string;
 };
 
+// Features include the known FEATURE_OPTIONS plus any free-text "Other" values.
+export type Feature = FeatureInterest | (string & {});
+
 export type Interaction = {
   id: string;
   companyName: string;
@@ -38,7 +41,7 @@ export type Interaction = {
   contacts: InteractionContact[];
   date: string;
   meetingSet: boolean;
-  features: FeatureInterest[];
+  features: Feature[];
   platformInterests: string[];
 };
 
@@ -46,10 +49,12 @@ export type InteractionDraft = {
   companyName: string;
   participants: string[];
   contacts: InteractionContact[];
-  features: FeatureInterest[];
+  features: Feature[];
   platformInterests: string[];
   calendarEventCreated: boolean;
   scannedRawCodes: string[];
+  // When false (manual entry), scanned contacts are not looked up via Apollo.
+  enrichmentEnabled: boolean;
 };
 
 export const interactions: Interaction[] = [];
@@ -63,6 +68,7 @@ export function createEmptyInteractionDraft(): InteractionDraft {
     platformInterests: [],
     calendarEventCreated: false,
     scannedRawCodes: [],
+    enrichmentEnabled: true,
   };
 }
 
@@ -76,7 +82,7 @@ export function createInteractionFromDraft(draft: InteractionDraft): Interaction
     contacts,
     date: new Date().toISOString(),
     meetingSet: draft.calendarEventCreated,
-    features: draft.features,
+    features: normalizeStringList(draft.features),
     platformInterests: normalizeStringList(draft.platformInterests),
   };
 }

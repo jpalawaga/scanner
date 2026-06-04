@@ -1,17 +1,14 @@
 import {
   DEFAULT_PLATFORM_OPTIONS,
-  FEATURE_OPTIONS,
   normalizeContacts,
   normalizeStringList,
   sortInteractionsReverseChronological,
-  type FeatureInterest,
   type Interaction,
   type InteractionContact,
 } from "./interactions";
 
 const INTERACTIONS_STORAGE_KEY = "scanner.interactions.v1";
 const CUSTOM_PLATFORM_OPTIONS_STORAGE_KEY = "scanner.customPlatformOptions.v1";
-const featureSet = new Set<string>(FEATURE_OPTIONS);
 const defaultPlatformSet = new Set<string>(DEFAULT_PLATFORM_OPTIONS);
 
 export function loadInteractions() {
@@ -117,7 +114,7 @@ function readInteraction(value: unknown): Interaction | null {
     date: candidate.date,
     meetingSet: Boolean(candidate.meetingSet),
     features: Array.isArray(candidate.features)
-      ? candidate.features.filter((feature): feature is FeatureInterest => featureSet.has(feature))
+      ? normalizeStringList(candidate.features.filter((item) => typeof item === "string"))
       : [],
     platformInterests: Array.isArray(candidate.platformInterests)
       ? normalizeStringList(candidate.platformInterests.filter((item) => typeof item === "string"))

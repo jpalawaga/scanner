@@ -46,6 +46,14 @@ export default function App() {
     });
   }
 
+  function startManualInteraction() {
+    // No scan, no Apollo lookups for anything entered or scanned in this draft.
+    setView({
+      name: "add",
+      draft: { ...createEmptyInteractionDraft(), enrichmentEnabled: false },
+    });
+  }
+
   function handleScan(rawText: string) {
     if (view.name !== "scan") {
       return;
@@ -61,6 +69,10 @@ export default function App() {
   // Best-effort: look up verified emails for freshly scanned contacts that
   // don't already have one, and patch them into the draft as results arrive.
   async function enrichDraftContacts(draft: InteractionDraft) {
+    if (!draft.enrichmentEnabled) {
+      return;
+    }
+
     const targets = draft.contacts.filter(
       (contact) => !contact.email && getContactDisplayName(contact),
     );
@@ -136,7 +148,13 @@ export default function App() {
     );
   }
 
-  return <HomeScreen interactions={interactions} onNewInteraction={startNewInteractionScan} />;
+  return (
+    <HomeScreen
+      interactions={interactions}
+      onManualInteraction={startManualInteraction}
+      onNewInteraction={startNewInteractionScan}
+    />
+  );
 }
 
 function applyEnrichedEmail(view: AppView, contactId: string, email: string): AppView {

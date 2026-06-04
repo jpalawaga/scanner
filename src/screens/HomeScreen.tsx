@@ -1,10 +1,11 @@
-import { CalendarDays, Plus, Search } from "lucide-react";
+import { CalendarDays, Pencil, QrCode, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { interactions as defaultInteractions, type Interaction } from "../data/interactions";
 
 type HomeScreenProps = {
   interactions?: Interaction[];
   onNewInteraction?: () => void;
+  onManualInteraction?: () => void;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -30,7 +31,11 @@ function participantSummary(participants: string[]) {
   return participants.join(", ");
 }
 
-export function HomeScreen({ interactions = defaultInteractions, onNewInteraction }: HomeScreenProps) {
+export function HomeScreen({
+  interactions = defaultInteractions,
+  onNewInteraction,
+  onManualInteraction,
+}: HomeScreenProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
 
@@ -61,15 +66,26 @@ export function HomeScreen({ interactions = defaultInteractions, onNewInteractio
           </h1>
         </header>
 
-        <button
-          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-base font-semibold text-white shadow-sm disabled:bg-slate-300"
-          disabled={!onNewInteraction}
-          onClick={onNewInteraction}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
-          Record new interaction
-        </button>
+        <div className="space-y-2">
+          <button
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-base font-semibold text-white shadow-sm disabled:bg-slate-300"
+            disabled={!onNewInteraction}
+            onClick={onNewInteraction}
+            type="button"
+          >
+            <QrCode aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+            Record new interaction
+          </button>
+          <button
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 shadow-sm disabled:text-slate-300"
+            disabled={!onManualInteraction}
+            onClick={onManualInteraction}
+            type="button"
+          >
+            <Pencil aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+            Enter manually
+          </button>
+        </div>
 
         <label className="mt-4 block">
           <span className="sr-only">Search interactions</span>

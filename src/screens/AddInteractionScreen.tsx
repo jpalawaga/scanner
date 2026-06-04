@@ -5,19 +5,24 @@ import {
   Check,
   Plus,
   Trash2,
+  UserPlus,
 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { downloadCalendarEvent } from "../calendar";
 import {
+  createInteractionContact,
   DEFAULT_PLATFORM_OPTIONS,
   FEATURE_OPTIONS,
   getContactDisplayName,
   normalizeContacts,
   normalizeStringList,
-  type FeatureInterest,
+  type Feature,
+  type InteractionContact,
   type InteractionDraft,
 } from "../data/interactions";
+
+const KNOWN_FEATURES = new Set<string>(FEATURE_OPTIONS);
 
 type AddInteractionScreenProps = {
   availablePlatformOptions: string[];
@@ -40,6 +45,9 @@ export function AddInteractionScreen({
 }: AddInteractionScreenProps) {
   const [platformQuery, setPlatformQuery] = useState("");
   const [calendarStatus, setCalendarStatus] = useState("");
+  const [featureQuery, setFeatureQuery] = useState("");
+  const [isAddingFeature, setIsAddingFeature] = useState(false);
+  const customFeatures = draft.features.filter((feature) => !KNOWN_FEATURES.has(feature));
   const normalizedCompanyName = draft.companyName.trim();
   const canSave = normalizedCompanyName.length > 0;
   const allPlatformOptions = useMemo(
@@ -59,11 +67,17 @@ export function AddInteractionScreen({
     });
   }
 
-  function updateContactEmail(index: number, email: string) {
+  function updateContact(index: number, updates: Partial<InteractionContact>) {
     updateDraft({
       contacts: draft.contacts.map((contact, contactIndex) =>
-        contactIndex === index ? { ...contact, email } : contact,
+        contactIndex === index ? { ...contact, ...updates } : contact,
       ),
+    });
+  }
+
+  function addManualContact() {
+    updateDraft({
+      contacts: [...draft.contacts, createInteractionContact({ companyName: draft.companyName })],
     });
   }
 
@@ -73,12 +87,23 @@ export function AddInteractionScreen({
     });
   }
 
-  function toggleFeature(feature: FeatureInterest) {
+  function toggleFeature(feature: Feature) {
     updateDraft({
       features: draft.features.includes(feature)
         ? draft.features.filter((selectedFeature) => selectedFeature !== feature)
         : [...draft.features, feature],
     });
+  }
+
+  function addCustomFeature() {
+    const feature = featureQuery.trim();
+
+    if (feature && !draft.features.includes(feature)) {
+      updateDraft({ features: [...draft.features, feature] });
+    }
+
+    setFeatureQuery("");
+    setIsAddingFeature(false);
   }
 
   function togglePlatform(platform: string) {
@@ -129,7 +154,7 @@ export function AddInteractionScreen({
   return (
     <main className="min-h-dvh bg-slate-50 text-slate-950">
       <form className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-4 py-5 sm:px-6" onSubmit={handleSubmit}>
-        <header className="grid grid-cols-[44px_1fr_44px] items-center">
+        <header className="flex items-center">
           <button
             aria-label="Back"
             className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm"
@@ -138,62 +163,85 @@ export function AddInteractionScreen({
           >
             <ArrowLeft aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
           </button>
-          <h1 className="text-center text-lg font-semibold text-slate-950">New Interaction</h1>
         </header>
 
-        <label className="mt-6 block">
-          <span className="text-sm font-semibold text-slate-700">Company name</span>
+        <div className="mt-6">
+          <p className="text-sm font-medium text-slate-500">New interaction</p>
           <input
-            className="mt-2 min-h-14 w-full rounded-lg border border-slate-200 bg-white px-4 text-xl font-semibold text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            aria-label="Company name"
+            className="mt-1 w-full border-b border-dashed border-slate-300 bg-transparent pb-1 text-2xl font-semibold tracking-tight text-slate-950 caret-slate-900 outline-none placeholder:font-normal placeholder:text-slate-300 focus:border-solid focus:border-slate-500"
             onChange={(event) => updateDraft({ companyName: event.target.value })}
-            placeholder="Company"
+            placeholder="Company name"
             value={draft.companyName}
           />
-        </label>
+        </div>
 
         <section className="mt-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-slate-700">Participants</h2>
-            <button
-              className="flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm"
-              onClick={onScanParticipant}
-              type="button"
-            >
-              <Camera aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
-              Scan
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className="flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm"
+                onClick={addManualContact}
+                type="button"
+              >
+                <UserPlus aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
+                Add
+              </button>
+              <button
+                className="flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm"
+                onClick={onScanParticipant}
+                type="button"
+              >
+                <Camera aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
+                Scan
+              </button>
+            </div>
           </div>
 
           <div className="mt-2 space-y-2">
             {draft.contacts.length > 0 ? (
               draft.contacts.map((contact, index) => {
-                const contactName = getContactDisplayName(contact) || "Unnamed contact";
-                const companyName = contact.companyName || draft.companyName || "Company not set";
+                const nameValue = contact.lastName
+                  ? `${contact.firstName} ${contact.lastName}`
+                  : contact.firstName;
+                const participantLabel = getContactDisplayName(contact) || `participant ${index + 1}`;
 
                 return (
                   <article
-                    className="grid min-h-20 grid-cols-[minmax(0,1fr)_minmax(8.75rem,44%)] items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 shadow-sm"
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm"
                     key={contact.id}
                   >
-                    <div className="min-w-0">
-                      <h3 className="truncate text-base font-semibold text-slate-950">{contactName}</h3>
-                      <p className="mt-1 truncate text-sm font-medium text-slate-500">{companyName}</p>
-                    </div>
-                    <div className="flex min-w-0 items-center gap-2">
-                      <label className="sr-only" htmlFor={`contact-email-${contact.id}`}>
-                        Email for {contactName}
-                      </label>
-                      <input
-                        className="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                        id={`contact-email-${contact.id}`}
-                        inputMode="email"
-                        onChange={(event) => updateContactEmail(index, event.target.value)}
-                        placeholder="email"
-                        type="email"
-                        value={contact.email}
-                      />
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <input
+                          aria-label={`Name for ${participantLabel}`}
+                          className="w-full rounded-md bg-transparent px-1 py-0.5 text-base font-semibold text-slate-950 outline-none placeholder:font-normal placeholder:text-slate-300 focus:bg-slate-50"
+                          onChange={(event) =>
+                            updateContact(index, { firstName: event.target.value, lastName: "" })
+                          }
+                          placeholder="Name"
+                          value={nameValue}
+                        />
+                        <input
+                          aria-label={`Company for ${participantLabel}`}
+                          className="w-full rounded-md bg-transparent px-1 py-0.5 text-sm font-medium text-slate-500 outline-none placeholder:text-slate-300 focus:bg-slate-50"
+                          onChange={(event) => updateContact(index, { companyName: event.target.value })}
+                          placeholder="Company"
+                          value={contact.companyName}
+                        />
+                        <input
+                          aria-label={`Email for ${participantLabel}`}
+                          className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                          inputMode="email"
+                          onChange={(event) => updateContact(index, { email: event.target.value })}
+                          placeholder="email"
+                          type="email"
+                          value={contact.email}
+                        />
+                      </div>
                       <button
-                        aria-label={`Remove ${contactName}`}
+                        aria-label={`Remove ${participantLabel}`}
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm"
                         onClick={() => removeContact(index)}
                         type="button"
@@ -206,7 +254,7 @@ export function AddInteractionScreen({
               })
             ) : (
               <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
-                No participants scanned.
+                No participants yet — scan a badge or add one manually.
               </div>
             )}
           </div>
@@ -215,7 +263,7 @@ export function AddInteractionScreen({
         <fieldset className="mt-6">
           <legend className="text-sm font-semibold text-slate-700">Features of interest</legend>
           <div className="mt-2 flex flex-wrap gap-2">
-            {FEATURE_OPTIONS.map((feature) => {
+            {[...FEATURE_OPTIONS, ...customFeatures].map((feature) => {
               const isSelected = draft.features.includes(feature);
 
               return (
@@ -238,7 +286,47 @@ export function AddInteractionScreen({
                 </label>
               );
             })}
+
+            <button
+              aria-expanded={isAddingFeature}
+              className="flex min-h-10 items-center gap-2 rounded-full border border-dashed border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
+              onClick={() => setIsAddingFeature((value) => !value)}
+              type="button"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
+              Other
+            </button>
           </div>
+
+          {isAddingFeature ? (
+            <div className="mt-2 flex gap-2">
+              <label className="min-w-0 flex-1">
+                <span className="sr-only">Other feature</span>
+                <input
+                  autoFocus
+                  className="min-h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-base text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  onChange={(event) => setFeatureQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addCustomFeature();
+                    }
+                  }}
+                  placeholder="Add a feature"
+                  value={featureQuery}
+                />
+              </label>
+              <button
+                aria-label="Add feature"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm disabled:text-slate-300"
+                disabled={!featureQuery.trim()}
+                onClick={addCustomFeature}
+                type="button"
+              >
+                <Plus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+              </button>
+            </div>
+          ) : null}
         </fieldset>
 
         <section className="mt-6">
