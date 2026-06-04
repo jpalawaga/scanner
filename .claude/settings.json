@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit -q -m ' *)"
+      "Bash(git *)",
+      "Bash(echo \"remote main: $\\(git ls-remote origin -h refs/heads/main)"
     ]
   }
 }
