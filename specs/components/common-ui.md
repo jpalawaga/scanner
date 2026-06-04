@@ -9,5 +9,9 @@ Scanner does not yet have a shared component library. The current UI is implemen
 - The UI uses light backgrounds, restrained borders, and slate text colors.
 - Form controls keep stable touch-friendly heights for mobile use.
 - Text truncates inside interaction tiles instead of resizing the layout.
+- Header back buttons use icon-only controls with accessible labels.
+- Primary full-width actions use stable 48-56px minimum heights for touch.
+- Feature interests use pill-style checkbox labels backed by actual checkbox inputs.
+- Platform interest uses a search input, square plus icon button, and checkbox list.
 
 Any future shared component extraction must update this document with component names, props, states, and accessibility expectations.

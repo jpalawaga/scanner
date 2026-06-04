@@ -1,5 +1,5 @@
 # Cleanup
 
-There are no active cleanup items.
+There is one active cleanup watch item.
 
-The current app has a single screen and no overlapping reusable component patterns yet. Add consolidation notes here when similar components, duplicate flows, or competing state patterns appear.
+- The Add Interaction feature pills and platform checkbox rows are inline. If another screen needs selectable option groups, extract a shared selection component and document it in `specs/components/common-ui.md`.

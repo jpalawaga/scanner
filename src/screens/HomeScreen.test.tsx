@@ -1,30 +1,41 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { Interaction } from "../data/interactions";
 import { HomeScreen } from "./HomeScreen";
 
-const buildInteraction = (overrides = {}) => ({
+const buildInteraction = (overrides: Partial<Interaction> = {}): Interaction => ({
   id: "interaction-1",
   companyName: "Acme Corp",
   participants: ["First Contact", "Second Contact"],
   date: "2026-06-03T09:30:00.000Z",
   meetingSet: false,
+  features: [],
+  platformInterests: [],
   ...overrides,
 });
 
 describe("HomeScreen", () => {
-  it("shows an empty state and a disabled record button when no interactions exist", () => {
-    render(<HomeScreen interactions={[]} />);
+  it("shows an empty state and starts the scan flow from the record button", async () => {
+    const user = userEvent.setup();
+    const onNewInteraction = vi.fn();
+
+    render(<HomeScreen interactions={[]} onNewInteraction={onNewInteraction} />);
 
     expect(screen.getByRole("heading", { name: "Interactions" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Record new interaction" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Record new interaction" })).toBeEnabled();
     expect(screen.getByText("No interactions yet")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Search company or participant")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Record new interaction" }));
+
+    expect(onNewInteraction).toHaveBeenCalledTimes(1);
   });
 
   it("renders interaction tiles with company, participants, date, and meeting marker", () => {
     render(
       <HomeScreen
+        onNewInteraction={vi.fn()}
         interactions={[
           buildInteraction({
             id: "interaction-1",
@@ -49,6 +60,7 @@ describe("HomeScreen", () => {
 
     render(
       <HomeScreen
+        onNewInteraction={vi.fn()}
         interactions={[
           buildInteraction({
             id: "interaction-1",

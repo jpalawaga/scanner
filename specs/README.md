@@ -10,6 +10,8 @@ This directory describes the current Scanner product specification from the ship
 
 ### Screens
 - [Home](screens/home.md)
+- [Scan QR Code](screens/scan.md)
+- [Add Interaction](screens/add-interaction.md)
 
 ### Features
 - [Log Interactions](features/log-interactions.md)
@@ -22,8 +24,8 @@ This directory describes the current Scanner product specification from the ship
 ## System Summary
 
 - Scanner is a mobile-first local utility for tracking interactions at conferences and similar events.
-- The first shipped screen is the Home screen. It exposes the shell, disabled interaction logging entry point, search field, empty state, and interaction list rendering behavior.
-- The app currently ships with an empty local interaction collection. Creation, editing, routing, and persistence are not available yet.
+- Scanner ships a Home -> QR scan -> Add Interaction flow for recording event conversations from badge QR codes.
+- Saved interactions persist in browser `localStorage` and are available offline in the same browser profile.
 - Scanner is intended for a single person organizing event leads.
 
 ## Reading Order

@@ -4,6 +4,7 @@ import { interactions as defaultInteractions, type Interaction } from "../data/i
 
 type HomeScreenProps = {
   interactions?: Interaction[];
+  onNewInteraction?: () => void;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -29,7 +30,7 @@ function participantSummary(participants: string[]) {
   return participants.join(", ");
 }
 
-export function HomeScreen({ interactions = defaultInteractions }: HomeScreenProps) {
+export function HomeScreen({ interactions = defaultInteractions, onNewInteraction }: HomeScreenProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
 
@@ -61,8 +62,9 @@ export function HomeScreen({ interactions = defaultInteractions }: HomeScreenPro
         </header>
 
         <button
-          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-200 px-4 text-base font-semibold text-slate-500 shadow-sm"
-          disabled
+          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-base font-semibold text-white shadow-sm disabled:bg-slate-300"
+          disabled={!onNewInteraction}
+          onClick={onNewInteraction}
           type="button"
         >
           <Plus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
@@ -118,7 +120,7 @@ export function HomeScreen({ interactions = defaultInteractions }: HomeScreenPro
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   {isSearchingEmptyList
                     ? "Try searching by company name or participant."
-                    : "Recorded conversations will appear here once interaction logging is available."}
+                    : "Recorded conversations will appear here after you scan and save an interaction."}
                 </p>
               </div>
             </div>
