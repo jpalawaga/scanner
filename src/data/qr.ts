@@ -22,8 +22,9 @@ export function parseQrContact(rawText: string): ScannedContact {
   const jsonContact = parseJsonContact(normalizedRawText);
   const vCardContact = parseVCardContact(normalizedRawText);
   const urlContact = parseUrlContact(normalizedRawText);
+  const caretBadgeContact = parseCaretBadgeContact(normalizedRawText);
   const plainTextContact = parsePlainTextContact(normalizedRawText);
-  const merged = [jsonContact, vCardContact, urlContact, plainTextContact].reduce<ScannedContact>(
+  const merged = [jsonContact, vCardContact, urlContact, caretBadgeContact, plainTextContact].reduce<ScannedContact>(
     (current, contact) => ({
       companyName: current.companyName || contact.companyName,
       participants: uniqueStrings([...current.participants, ...contact.participants]),
@@ -33,6 +34,29 @@ export function parseQrContact(rawText: string): ScannedContact {
   );
 
   return merged;
+}
+
+function parseCaretBadgeContact(rawText: string): ScannedContact {
+  const parts = rawText.split("^").map(normalizeWhitespace);
+
+  if (parts.length < 4 || !rawText.includes("^")) {
+    return emptyContact(rawText);
+  }
+
+  const firstName = parts[1] ?? "";
+  const lastName = parts[2] ?? "";
+  const companyName = parts[3] ?? "";
+  const fullName = combineName(firstName, lastName);
+
+  if (!fullName && !companyName) {
+    return emptyContact(rawText);
+  }
+
+  return {
+    companyName,
+    participants: fullName ? [fullName] : [],
+    rawText,
+  };
 }
 
 function parseJsonContact(rawText: string): ScannedContact {
@@ -139,7 +163,7 @@ function parsePlainTextContact(rawText: string): ScannedContact {
     };
   }
 
-  if (lines.length === 1 && !looksLikeUrl(lines[0])) {
+  if (lines.length === 1 && !looksLikeUrl(lines[0]) && !lines[0].includes("^")) {
     return {
       companyName: "",
       participants: [lines[0]],

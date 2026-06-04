@@ -23,6 +23,7 @@ Scanner attempts to populate company and participants from these QR payload shap
 - vCard payloads with `FN`, `N`, and `ORG` fields.
 - JSON payloads with company fields such as `companyName`, `company`, `organization`, or `org`, and participant fields such as `name`, `firstName` plus `lastName`, or a `participants` array.
 - URL payloads with query parameters such as `company`, `org`, `name`, `firstName`, and `lastName`.
+- Caret-delimited badge payloads in the form `<junk>^first^last^company^`, such as `0000000000000000test^First^Last^ExampleCo^`.
 - Plain text key/value payloads using `:` or `=` separators.
 - A single non-URL plain text value is treated as one participant name.
 

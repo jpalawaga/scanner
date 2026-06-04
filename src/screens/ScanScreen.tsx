@@ -90,7 +90,8 @@ export function ScanScreen({ heading = "Scan QR code", onBack, onScan }: ScanScr
   }, []);
 
   async function handlePhotoUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.currentTarget.files?.[0];
+    const input = event.currentTarget;
+    const file = input.files?.[0];
 
     if (!file) {
       return;
@@ -111,7 +112,7 @@ export function ScanScreen({ heading = "Scan QR code", onBack, onScan }: ScanScr
     } finally {
       URL.revokeObjectURL(url);
       setIsReadingFile(false);
-      event.currentTarget.value = "";
+      input.value = "";
     }
   }
 

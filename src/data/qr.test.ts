@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { parseQrContact } from "./qr";
 
 describe("parseQrContact", () => {
+  it("reads company and participant from caret-delimited badge content", () => {
+    expect(parseQrContact("0000000000000000test^First^Last^ExampleCo^")).toMatchObject({
+      companyName: "ExampleCo",
+      participants: ["First Last"],
+    });
+  });
+
   it("reads company and participant from vCard QR content", () => {
     expect(
       parseQrContact(["BEGIN:VCARD", "VERSION:3.0", "FN:First Last", "ORG:ExampleCo", "END:VCARD"].join("\n")),
