@@ -232,6 +232,68 @@ export const DEFAULT_PLATFORM_OPTIONS = [
   "ZoomInfo",
 ] as const;
 
+// Common abbreviations/acronyms mapped to substrings that should match an
+// option (lowercased). Used in addition to substring + acronym matching.
+const PLATFORM_ALIASES: Record<string, string[]> = {
+  psql: ["postgresql"],
+  pg: ["postgresql"],
+  ms: ["microsoft"],
+  msft: ["microsoft"],
+  mssql: ["microsoft sql server"],
+  "sql server": ["microsoft sql server"],
+  d365: ["microsoft dynamics 365"],
+  sfdc: ["salesforce"],
+  sf: ["salesforce"],
+  hs: ["hubspot"],
+  gcp: ["google cloud"],
+  gcs: ["google cloud storage"],
+  bq: ["google bigquery"],
+  gbq: ["google bigquery"],
+  ga: ["google analytics", "google ads"],
+  gsc: ["google search console"],
+  gsheets: ["google sheets"],
+  ddb: ["dynamodb"],
+  dynamo: ["dynamodb"],
+  mongo: ["mongodb"],
+  ch: ["clickhouse"],
+  qb: ["quickbooks"],
+  qbo: ["quickbooks"],
+  li: ["linkedin"],
+  fb: ["facebook"],
+  yt: ["youtube"],
+};
+
+// Matches an integration option against a search query, supporting substrings,
+// word-initial acronyms ("mss" -> Microsoft SQL Server), and the aliases above
+// ("psql" -> PostgreSQL, "ms" -> Microsoft ...). `query` should be pre-trimmed.
+export function platformMatchesQuery(option: string, query: string): boolean {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const normalizedOption = option.toLocaleLowerCase();
+
+  if (normalizedOption.includes(normalizedQuery)) {
+    return true;
+  }
+
+  const acronym = option
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((word) => word[0]?.toLocaleLowerCase() ?? "")
+    .join("");
+
+  if (acronym.startsWith(normalizedQuery.replace(/\s+/g, ""))) {
+    return true;
+  }
+
+  const aliasTargets = PLATFORM_ALIASES[normalizedQuery];
+
+  return Boolean(aliasTargets?.some((target) => normalizedOption.includes(target)));
+}
+
 export type FeatureInterest = (typeof FEATURE_OPTIONS)[number];
 
 export type InteractionContact = {

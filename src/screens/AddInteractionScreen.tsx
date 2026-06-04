@@ -19,6 +19,7 @@ import {
   getContactDisplayName,
   normalizeContacts,
   normalizeStringList,
+  platformMatchesQuery,
   type Feature,
   type InteractionContact,
   type InteractionDraft,
@@ -53,6 +54,7 @@ export function AddInteractionScreen({
   const normalizedCompanyName = draft.companyName.trim();
   const canSave = normalizedCompanyName.length > 0;
   const companyNameRef = useRef<HTMLTextAreaElement>(null);
+  const platformSearchRef = useRef<HTMLInputElement>(null);
 
   // The company name is a hero heading that wraps for long names, so grow the
   // textarea to fit its content instead of scrolling.
@@ -77,7 +79,7 @@ export function AddInteractionScreen({
   const matchingPlatformOptions = normalizedPlatformQuery
     ? allPlatformOptions
         .filter((option) => !draft.platformInterests.includes(option))
-        .filter((option) => option.toLocaleLowerCase().includes(normalizedPlatformQuery))
+        .filter((option) => platformMatchesQuery(option, normalizedPlatformQuery))
         .slice(0, 8)
     : [];
   const canAddCustomPlatform =
@@ -393,8 +395,16 @@ export function AddInteractionScreen({
             <label className="block">
               <span className="sr-only">Search integrations</span>
               <input
-                className="min-h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-base text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                className="min-h-12 w-full scroll-mt-20 rounded-lg border border-slate-200 bg-white px-3 text-base text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                 onChange={(event) => setPlatformQuery(event.target.value)}
+                onFocus={() => {
+                  // Lift the field toward the top once the mobile keyboard has
+                  // animated in, so results aren't hidden behind it.
+                  window.setTimeout(() => {
+                    platformSearchRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+                  }, 300);
+                }}
+                ref={platformSearchRef}
                 onKeyDown={(event) => {
                   if (event.key !== "Enter") {
                     return;
