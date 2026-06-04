@@ -53,10 +53,12 @@ The Add Interaction screen allows the user to review and edit the draft before s
 
 ## Calendar Export
 
-- `Add to calendar` creates an `.ics` file with meeting title, contact names/emails, feature interests, and platform interests.
+- `Google Calendar` opens a Google Calendar event creation link with meeting title, event time, details, and participants.
+- Contact emails are passed as Google Calendar guests when present.
+- `Download .ics` creates an `.ics` file with meeting title, contact names/emails, feature interests, and platform interests.
 - The event defaults to the next half-hour boundary and lasts 30 minutes.
-- On mobile browsers, opening or downloading the `.ics` file relies on the operating system/browser to hand the file to a calendar app.
-- Creating the calendar file marks the draft as having a meeting scheduled; saved interactions with that marker show the calendar icon on Home.
+- On mobile browsers, the Google Calendar link relies on the browser and installed Google account session to finish event creation.
+- Opening Google Calendar or downloading the `.ics` file marks the draft as having a meeting scheduled; saved interactions with that marker show the calendar icon on Home.
 
 ## Saving
 

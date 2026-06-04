@@ -55,14 +55,14 @@ describe("AddInteractionScreen", () => {
     renderHarness({ ...createEmptyInteractionDraft(), companyName: "ExampleCo" }, onSave);
 
     await user.click(screen.getByRole("button", { name: "Add" }));
-    await user.type(screen.getByRole("textbox", { name: "Name for participant 1" }), "Jordan Lee");
+    await user.type(screen.getByRole("textbox", { name: "Name for participant 1" }), "Manual Contact");
     await user.click(screen.getByRole("button", { name: "Done" }));
 
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
-        participants: ["Jordan Lee"],
+        participants: ["Manual Contact"],
         contacts: [
-          expect.objectContaining({ firstName: "Jordan Lee", lastName: "", companyName: "ExampleCo" }),
+          expect.objectContaining({ firstName: "Manual Contact", lastName: "", companyName: "ExampleCo" }),
         ],
       }),
     );
@@ -124,6 +124,39 @@ describe("AddInteractionScreen", () => {
     );
   });
 
+  it("opens Google Calendar with the participant email", async () => {
+    const user = userEvent.setup();
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    renderHarness({
+      ...createEmptyInteractionDraft(),
+      companyName: "ExampleCo",
+      contacts: [
+        createInteractionContact({
+          firstName: "First",
+          lastName: "Last",
+          companyName: "ExampleCo",
+          email: "first.last@example.test",
+        }),
+      ],
+    });
+
+    await user.click(screen.getByRole("button", { name: "Google Calendar" }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining("https://calendar.google.com/calendar/render?"),
+      "_blank",
+      "noopener,noreferrer",
+    );
+    expect(new URL(openSpy.mock.calls[0][0] as string).searchParams.getAll("add")).toEqual([
+      "first.last@example.test",
+    ]);
+    expect(screen.getByText("Google Calendar opened")).toBeInTheDocument();
+
+    openSpy.mockRestore();
+  });
+
+
   it("saves selected features and platform interests", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
@@ -166,7 +199,7 @@ describe("AddInteractionScreen", () => {
     renderHarness(
       {
         ...createEmptyInteractionDraft(),
-        companyName: "Oracle",
+        companyName: "ExampleDb",
       },
       vi.fn(),
       onAddPlatformOption,

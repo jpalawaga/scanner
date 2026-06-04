@@ -30,4 +30,4 @@ The Add Interaction form currently implements these controls inline:
 - Contact tiles with first/last header text, company subtitle, right-aligned email textbox, and remove icon button.
 - Feature interest pill checkboxes.
 - Platform search, add button, and checkbox list.
-- Calendar export and Done action buttons.
+- Google Calendar, `.ics` export, and Done action buttons.

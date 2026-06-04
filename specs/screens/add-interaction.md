@@ -57,12 +57,15 @@ Selecting an option toggles it on or off.
 
 ## Calendar
 
-- `Add to calendar` creates and downloads an `.ics` file.
+- `Google Calendar` opens a Google Calendar event creation link in a new browser tab.
+- The Google Calendar link pre-populates the event title, date/time, description, and guests.
+- Guests are sourced from contact tiles with non-empty email fields.
+- `Download .ics` creates and downloads an `.ics` file for Apple/iCloud and other calendar apps.
 - The title is `Meeting with {companyName}`.
 - The description includes participants, feature interests, and platform interests when present.
 - When contact emails are filled, calendar participant details include `Name <email>`.
 - The event starts at the next half-hour boundary and lasts 30 minutes.
-- Creating the file marks the draft as having a meeting scheduled.
+- Opening Google Calendar or creating the `.ics` file marks the draft as having a meeting scheduled.
 - Saved interactions with a meeting scheduled show the calendar icon on Home.
 
 ## Done

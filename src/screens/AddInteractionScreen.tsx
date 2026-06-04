@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { downloadCalendarEvent } from "../calendar";
+import { createGoogleCalendarUrl, downloadCalendarEvent } from "../calendar";
 import {
   createInteractionContact,
   DEFAULT_PLATFORM_OPTIONS,
@@ -133,6 +133,12 @@ export function AddInteractionScreen({
     downloadCalendarEvent(draft);
     updateDraft({ calendarEventCreated: true });
     setCalendarStatus("Calendar file created");
+  }
+
+  function handleGoogleCalendarOpen() {
+    window.open(createGoogleCalendarUrl(draft), "_blank", "noopener,noreferrer");
+    updateDraft({ calendarEventCreated: true });
+    setCalendarStatus("Google Calendar opened");
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -379,13 +385,22 @@ export function AddInteractionScreen({
 
         <div className="mt-6 space-y-3">
           <button
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-950 bg-slate-950 px-4 text-base font-semibold text-white shadow-sm disabled:border-slate-300 disabled:bg-slate-300"
+            disabled={!canSave}
+            onClick={handleGoogleCalendarOpen}
+            type="button"
+          >
+            <CalendarPlus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+            Google Calendar
+          </button>
+          <button
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 shadow-sm disabled:text-slate-300"
             disabled={!canSave}
             onClick={handleCalendarDownload}
             type="button"
           >
             <CalendarPlus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
-            Add to calendar
+            Download .ics
           </button>
           {calendarStatus ? (
             <p aria-live="polite" className="text-center text-sm font-medium text-emerald-700">

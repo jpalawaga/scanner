@@ -9,7 +9,7 @@ Scanner includes initial production-build PWA wiring through `vite-plugin-pwa`, 
 - Workbox includes generated build assets matching `js`, `css`, `html`, `ico`, `png`, and `svg`.
 - Saved interactions and custom platform options use browser `localStorage`, so they remain available offline in the same browser profile.
 - QR camera scanning depends on browser camera APIs and user permission.
-- Calendar export creates an `.ics` file and relies on the mobile browser/operating system to open the user's calendar flow.
+- Calendar export supports a Google Calendar event creation link and an `.ics` file. The Google flow needs network access and a Google account session; the `.ics` flow relies on the mobile browser/operating system to open the user's calendar flow.
 
 ## Build Output
 
