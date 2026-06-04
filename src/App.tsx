@@ -20,6 +20,7 @@ import {
   storeInteractions,
 } from "./data/storage";
 import { AddInteractionScreen } from "./screens/AddInteractionScreen";
+import { PwaUpdatePrompt } from "./components/PwaUpdatePrompt";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ScanScreen } from "./screens/ScanScreen";
 
@@ -149,41 +150,50 @@ export default function App() {
 
   if (view.name === "scan") {
     return (
-      <ScanScreen
-        heading={view.mode === "new" ? "Scan QR code" : "Scan participant"}
-        onBack={() =>
-          setView(
-            view.mode === "new"
-              ? { name: "home" }
-              : { name: "add", draft: view.returnDraft, editingId: view.editingId },
-          )
-        }
-        onScan={handleScan}
-      />
+      <>
+        <ScanScreen
+          heading={view.mode === "new" ? "Scan QR code" : "Scan participant"}
+          onBack={() =>
+            setView(
+              view.mode === "new"
+                ? { name: "home" }
+                : { name: "add", draft: view.returnDraft, editingId: view.editingId },
+            )
+          }
+          onScan={handleScan}
+        />
+        <PwaUpdatePrompt />
+      </>
     );
   }
 
   if (view.name === "add") {
     return (
-      <AddInteractionScreen
-        availablePlatformOptions={availablePlatformOptions}
-        draft={view.draft}
-        onAddPlatformOption={handleAddPlatformOption}
-        onBack={() => setView({ name: "home" })}
-        onChange={(draft) => setView({ name: "add", draft, editingId: view.editingId })}
-        onSave={handleSave}
-        onScanParticipant={() => handleScanParticipant(view.draft, view.editingId)}
-      />
+      <>
+        <AddInteractionScreen
+          availablePlatformOptions={availablePlatformOptions}
+          draft={view.draft}
+          onAddPlatformOption={handleAddPlatformOption}
+          onBack={() => setView({ name: "home" })}
+          onChange={(draft) => setView({ name: "add", draft, editingId: view.editingId })}
+          onSave={handleSave}
+          onScanParticipant={() => handleScanParticipant(view.draft, view.editingId)}
+        />
+        <PwaUpdatePrompt />
+      </>
     );
   }
 
   return (
-    <HomeScreen
-      interactions={interactions}
-      onEditInteraction={startEditInteraction}
-      onManualInteraction={startManualInteraction}
-      onNewInteraction={startNewInteractionScan}
-    />
+    <>
+      <HomeScreen
+        interactions={interactions}
+        onEditInteraction={startEditInteraction}
+        onManualInteraction={startManualInteraction}
+        onNewInteraction={startNewInteractionScan}
+      />
+      <PwaUpdatePrompt />
+    </>
   );
 }
 

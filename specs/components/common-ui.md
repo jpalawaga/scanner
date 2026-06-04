@@ -13,5 +13,6 @@ Scanner does not yet have a shared component library. The current UI is implemen
 - Primary full-width actions use stable 48-56px minimum heights for touch.
 - Feature interests use pill-style checkbox labels backed by actual checkbox inputs.
 - Platform interest uses a search input, square plus icon button, and checkbox list.
+- PWA update prompts appear as a fixed bottom banner with an `Update` action and icon-only dismiss control.
 
 Any future shared component extraction must update this document with component names, props, states, and accessibility expectations.
