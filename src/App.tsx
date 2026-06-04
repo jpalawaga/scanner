@@ -3,12 +3,14 @@ import {
   createEmptyInteractionDraft,
   createInteractionContact,
   createInteractionFromDraft,
+  getContactDisplayName,
   normalizeStringList,
   normalizeContacts,
   sortInteractionsReverseChronological,
   type Interaction,
   type InteractionDraft,
 } from "./data/interactions";
+import { enrichContact } from "./data/enrichment";
 import { parseQrContact } from "./data/qr";
 import {
   loadCustomPlatformOptions,
@@ -53,6 +55,29 @@ export default function App() {
     const draft = mergeScannedContact(view.returnDraft, scannedContact, rawText);
 
     setView({ name: "add", draft });
+    void enrichDraftContacts(draft);
+  }
+
+  // Best-effort: look up verified emails for freshly scanned contacts that
+  // don't already have one, and patch them into the draft as results arrive.
+  async function enrichDraftContacts(draft: InteractionDraft) {
+    const targets = draft.contacts.filter(
+      (contact) => !contact.email && getContactDisplayName(contact),
+    );
+
+    await Promise.all(
+      targets.map(async (contact) => {
+        const result = await enrichContact({
+          firstName: contact.firstName,
+          lastName: contact.lastName,
+          companyName: contact.companyName || draft.companyName,
+        });
+
+        if (result) {
+          setView((current) => applyEnrichedEmail(current, contact.id, result.email));
+        }
+      }),
+    );
   }
 
   function handleScanParticipant(draft: InteractionDraft) {
@@ -112,6 +137,22 @@ export default function App() {
   }
 
   return <HomeScreen interactions={interactions} onNewInteraction={startNewInteractionScan} />;
+}
+
+function applyEnrichedEmail(view: AppView, contactId: string, email: string): AppView {
+  if (view.name !== "add") {
+    return view;
+  }
+
+  return {
+    ...view,
+    draft: {
+      ...view.draft,
+      contacts: view.draft.contacts.map((contact) =>
+        contact.id === contactId && !contact.email ? { ...contact, email } : contact,
+      ),
+    },
+  };
 }
 
 function mergeScannedContact(
