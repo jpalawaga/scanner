@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import {
   createEmptyInteractionDraft,
+  createInteractionContact,
   createInteractionFromDraft,
   normalizeStringList,
+  normalizeContacts,
   sortInteractionsReverseChronological,
   type Interaction,
   type InteractionDraft,
@@ -121,6 +123,17 @@ function mergeScannedContact(
     ...draft,
     companyName: draft.companyName || contact.companyName,
     participants: normalizeStringList([...draft.participants, ...contact.participants]),
+    contacts: normalizeContacts([
+      ...draft.contacts,
+      ...contact.contacts.map((scannedContact) =>
+        createInteractionContact({
+          firstName: scannedContact.firstName,
+          lastName: scannedContact.lastName,
+          companyName: scannedContact.companyName || contact.companyName || draft.companyName,
+          email: scannedContact.email,
+        }),
+      ),
+    ]),
     scannedRawCodes: [...draft.scannedRawCodes, rawText],
   };
 }

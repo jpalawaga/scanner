@@ -11,12 +11,27 @@ type Interaction = {
   id: string;
   companyName: string;
   participants: string[];
+  contacts: InteractionContact[];
   date: string;
   meetingSet: boolean;
   features: FeatureInterest[];
   platformInterests: string[];
 };
 ```
+
+Contact records use this shape:
+
+```ts
+type InteractionContact = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  companyName: string;
+  email: string;
+};
+```
+
+`participants` is retained as the Home subtitle/search summary. It is derived from saved contact names plus any legacy participant strings.
 
 Feature interests are fixed to:
 
@@ -49,6 +64,7 @@ The Add Interaction flow uses an unsaved draft:
 type InteractionDraft = {
   companyName: string;
   participants: string[];
+  contacts: InteractionContact[];
   features: FeatureInterest[];
   platformInterests: string[];
   calendarEventCreated: boolean;
@@ -80,7 +96,8 @@ type InteractionDraft = {
 - `scanner.customPlatformOptions.v1` stores custom platform option strings as JSON.
 - Writes happen when an interaction is saved or a custom platform option is added.
 - Interaction IDs are generated with `crypto.randomUUID()` when available and fall back to a timestamp/random suffix.
-- Saving normalizes participant and platform lists by trimming values, removing blanks, and removing duplicates.
+- Contact IDs use the same ID generator as interactions.
+- Saving normalizes contacts, participant names, and platform lists by trimming values, removing blanks, and removing duplicates.
 - Custom platform options are lowercased and stored only when they are not part of the default platform list.
 
 ## Compatibility
@@ -89,5 +106,6 @@ type InteractionDraft = {
 - There are no migrations.
 - There is no backup, restore, or offline data queue.
 - The current storage contract is versioned by key name with `.v1`.
+- Older saved interaction records without `contacts` still load with an empty contact list.
 - Unknown, malformed, or incompatible stored entries are ignored instead of crashing app startup.
 - Future schema changes must add migration behavior or write to a new versioned storage key.

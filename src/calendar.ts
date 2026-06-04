@@ -1,11 +1,12 @@
-import type { InteractionDraft } from "./data/interactions";
+import { getContactDisplayName, normalizeStringList, type InteractionDraft } from "./data/interactions";
 
 export function createCalendarEventFile(draft: InteractionDraft) {
   const startsAt = roundToNextHalfHour(new Date());
   const endsAt = new Date(startsAt.getTime() + 30 * 60 * 1000);
   const title = `Meeting with ${draft.companyName.trim() || "new contact"}`;
+  const participantDetails = getParticipantDetails(draft);
   const descriptionParts = [
-    draft.participants.length > 0 ? `Participants: ${draft.participants.join(", ")}` : "",
+    participantDetails.length > 0 ? `Participants: ${participantDetails.join(", ")}` : "",
     draft.features.length > 0 ? `Features: ${draft.features.join(", ")}` : "",
     draft.platformInterests.length > 0 ? `Platforms: ${draft.platformInterests.join(", ")}` : "",
   ].filter(Boolean);
@@ -26,6 +27,18 @@ export function createCalendarEventFile(draft: InteractionDraft) {
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");
+}
+
+function getParticipantDetails(draft: InteractionDraft) {
+  if (draft.contacts.length === 0) {
+    return normalizeStringList(draft.participants);
+  }
+
+  return draft.contacts.map((contact) => {
+    const contactName = getContactDisplayName(contact) || "Unnamed contact";
+
+    return contact.email ? `${contactName} <${contact.email}>` : contactName;
+  });
 }
 
 export function downloadCalendarEvent(draft: InteractionDraft) {

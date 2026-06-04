@@ -23,10 +23,19 @@ export const DEFAULT_PLATFORM_OPTIONS = [
 
 export type FeatureInterest = (typeof FEATURE_OPTIONS)[number];
 
+export type InteractionContact = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  companyName: string;
+  email: string;
+};
+
 export type Interaction = {
   id: string;
   companyName: string;
   participants: string[];
+  contacts: InteractionContact[];
   date: string;
   meetingSet: boolean;
   features: FeatureInterest[];
@@ -36,6 +45,7 @@ export type Interaction = {
 export type InteractionDraft = {
   companyName: string;
   participants: string[];
+  contacts: InteractionContact[];
   features: FeatureInterest[];
   platformInterests: string[];
   calendarEventCreated: boolean;
@@ -48,6 +58,7 @@ export function createEmptyInteractionDraft(): InteractionDraft {
   return {
     companyName: "",
     participants: [],
+    contacts: [],
     features: [],
     platformInterests: [],
     calendarEventCreated: false,
@@ -56,15 +67,67 @@ export function createEmptyInteractionDraft(): InteractionDraft {
 }
 
 export function createInteractionFromDraft(draft: InteractionDraft): Interaction {
+  const contacts = normalizeContacts(draft.contacts);
+
   return {
     id: createInteractionId(),
     companyName: draft.companyName.trim(),
-    participants: normalizeStringList(draft.participants),
+    participants: normalizeStringList([...draft.participants, ...contacts.map(getContactDisplayName)]),
+    contacts,
     date: new Date().toISOString(),
     meetingSet: draft.calendarEventCreated,
     features: draft.features,
     platformInterests: normalizeStringList(draft.platformInterests),
   };
+}
+
+export function createInteractionContact({
+  firstName = "",
+  lastName = "",
+  companyName = "",
+  email = "",
+}: Partial<Omit<InteractionContact, "id">>): InteractionContact {
+  return {
+    id: createInteractionId(),
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
+    companyName: companyName.trim(),
+    email: email.trim(),
+  };
+}
+
+export function normalizeContacts(contacts: InteractionContact[]) {
+  const seenContacts = new Set<string>();
+
+  return contacts
+    .map((contact) => ({
+      ...contact,
+      firstName: contact.firstName.trim(),
+      lastName: contact.lastName.trim(),
+      companyName: contact.companyName.trim(),
+      email: contact.email.trim(),
+    }))
+    .filter((contact) => getContactDisplayName(contact) || contact.email || contact.companyName)
+    .filter((contact) => {
+      const key = [
+        contact.firstName.toLocaleLowerCase(),
+        contact.lastName.toLocaleLowerCase(),
+        contact.companyName.toLocaleLowerCase(),
+        contact.email.toLocaleLowerCase(),
+      ].join("|");
+
+      if (seenContacts.has(key)) {
+        return false;
+      }
+
+      seenContacts.add(key);
+
+      return true;
+    });
+}
+
+export function getContactDisplayName(contact: Pick<InteractionContact, "firstName" | "lastName">) {
+  return [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim();
 }
 
 export function sortInteractionsReverseChronological(items: Interaction[]) {

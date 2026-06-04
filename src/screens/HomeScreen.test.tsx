@@ -8,6 +8,7 @@ const buildInteraction = (overrides: Partial<Interaction> = {}): Interaction => 
   id: "interaction-1",
   companyName: "Acme Corp",
   participants: ["First Contact", "Second Contact"],
+  contacts: [],
   date: "2026-06-03T09:30:00.000Z",
   meetingSet: false,
   features: [],

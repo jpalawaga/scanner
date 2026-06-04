@@ -1,10 +1,12 @@
 import {
   DEFAULT_PLATFORM_OPTIONS,
   FEATURE_OPTIONS,
+  normalizeContacts,
   normalizeStringList,
   sortInteractionsReverseChronological,
   type FeatureInterest,
   type Interaction,
+  type InteractionContact,
 } from "./interactions";
 
 const INTERACTIONS_STORAGE_KEY = "scanner.interactions.v1";
@@ -109,6 +111,9 @@ function readInteraction(value: unknown): Interaction | null {
     participants: Array.isArray(candidate.participants)
       ? normalizeStringList(candidate.participants.filter((item) => typeof item === "string"))
       : [],
+    contacts: Array.isArray(candidate.contacts)
+      ? normalizeContacts(candidate.contacts.map(readContact).filter(isContact))
+      : [],
     date: candidate.date,
     meetingSet: Boolean(candidate.meetingSet),
     features: Array.isArray(candidate.features)
@@ -120,7 +125,31 @@ function readInteraction(value: unknown): Interaction | null {
   };
 }
 
+function readContact(value: unknown): InteractionContact | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<InteractionContact>;
+
+  if (typeof candidate.id !== "string") {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    firstName: typeof candidate.firstName === "string" ? candidate.firstName : "",
+    lastName: typeof candidate.lastName === "string" ? candidate.lastName : "",
+    companyName: typeof candidate.companyName === "string" ? candidate.companyName : "",
+    email: typeof candidate.email === "string" ? candidate.email : "",
+  };
+}
+
 function isInteraction(value: Interaction | null): value is Interaction {
+  return value !== null;
+}
+
+function isContact(value: InteractionContact | null): value is InteractionContact {
   return value !== null;
 }
 

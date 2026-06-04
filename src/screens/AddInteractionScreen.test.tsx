@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { createEmptyInteractionDraft, type InteractionDraft } from "../data/interactions";
+import { createEmptyInteractionDraft, createInteractionContact, type InteractionDraft } from "../data/interactions";
 import { AddInteractionScreen } from "./AddInteractionScreen";
 
 function renderHarness(initialDraft: InteractionDraft, onSave = vi.fn(), onAddPlatformOption = vi.fn()) {
@@ -30,13 +30,58 @@ describe("AddInteractionScreen", () => {
     renderHarness({
       ...createEmptyInteractionDraft(),
       companyName: "ExampleCo",
-      participants: ["First Last"],
+      contacts: [
+        createInteractionContact({
+          firstName: "First",
+          lastName: "Last",
+          companyName: "ExampleCo",
+        }),
+      ],
     });
 
     expect(screen.getByRole("heading", { name: "New Interaction" })).toBeInTheDocument();
     expect(screen.getByDisplayValue("ExampleCo")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("First Last")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "First Last" })).toBeInTheDocument();
+    expect(screen.getByText("ExampleCo")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Email for First Last" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Scan" })).toBeInTheDocument();
+  });
+
+  it("saves contact email edits", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+
+    renderHarness(
+      {
+        ...createEmptyInteractionDraft(),
+        companyName: "ExampleCo",
+        contacts: [
+          createInteractionContact({
+            firstName: "First",
+            lastName: "Last",
+            companyName: "ExampleCo",
+          }),
+        ],
+      },
+      onSave,
+    );
+
+    await user.type(screen.getByRole("textbox", { name: "Email for First Last" }), "first.last@example.test");
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        participants: ["First Last"],
+        contacts: [
+          expect.objectContaining({
+            firstName: "First",
+            lastName: "Last",
+            companyName: "ExampleCo",
+            email: "first.last@example.test",
+          }),
+        ],
+      }),
+    );
   });
 
   it("saves selected features and platform interests", async () => {
@@ -47,7 +92,13 @@ describe("AddInteractionScreen", () => {
       {
         ...createEmptyInteractionDraft(),
         companyName: "Snowflake",
-        participants: ["First Last"],
+        contacts: [
+          createInteractionContact({
+            firstName: "First",
+            lastName: "Last",
+            companyName: "Snowflake",
+          }),
+        ],
       },
       onSave,
     );

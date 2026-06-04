@@ -6,6 +6,14 @@ describe("parseQrContact", () => {
     expect(parseQrContact("0000000000000000test^First^Last^ExampleCo^")).toMatchObject({
       companyName: "ExampleCo",
       participants: ["First Last"],
+      contacts: [
+        {
+          firstName: "First",
+          lastName: "Last",
+          companyName: "ExampleCo",
+          email: "",
+        },
+      ],
     });
   });
 

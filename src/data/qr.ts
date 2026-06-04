@@ -1,7 +1,15 @@
 export type ScannedContact = {
   companyName: string;
   participants: string[];
+  contacts: ScannedContactPerson[];
   rawText: string;
+};
+
+export type ScannedContactPerson = {
+  firstName: string;
+  lastName: string;
+  companyName: string;
+  email: string;
 };
 
 const companyKeys = [
@@ -28,9 +36,10 @@ export function parseQrContact(rawText: string): ScannedContact {
     (current, contact) => ({
       companyName: current.companyName || contact.companyName,
       participants: uniqueStrings([...current.participants, ...contact.participants]),
+      contacts: uniqueContactPeople([...current.contacts, ...contact.contacts]),
       rawText: normalizedRawText,
     }),
-    { companyName: "", participants: [], rawText: normalizedRawText },
+    { companyName: "", participants: [], contacts: [], rawText: normalizedRawText },
   );
 
   return merged;
@@ -55,6 +64,7 @@ function parseCaretBadgeContact(rawText: string): ScannedContact {
   return {
     companyName,
     participants: fullName ? [fullName] : [],
+    contacts: fullName ? [createContactPerson(firstName, lastName, companyName)] : [],
     rawText,
   };
 }
@@ -68,12 +78,20 @@ function parseJsonContact(rawText: string): ScannedContact {
     }
 
     const source = parsedValue as Record<string, unknown>;
-    const fullName = readString(source, fullNameKeys) || combineName(readString(source, firstNameKeys), readString(source, lastNameKeys));
+    const firstName = readString(source, firstNameKeys);
+    const lastName = readString(source, lastNameKeys);
+    const fullName = readString(source, fullNameKeys) || combineName(firstName, lastName);
     const participants = readParticipants(source);
+    const companyName = readString(source, companyKeys);
+    const email = readString(source, ["email", "emailAddress", "email_address", "workEmail"]);
 
     return {
-      companyName: readString(source, companyKeys),
+      companyName,
       participants: uniqueStrings(fullName ? [fullName, ...participants] : participants),
+      contacts: uniqueContactPeople([
+        fullName ? createContactPersonFromName(fullName, companyName, email, firstName, lastName) : null,
+        ...participants.map((participant) => createContactPersonFromName(participant, companyName)),
+      ]),
       rawText,
     };
   } catch {
@@ -104,10 +122,14 @@ function parseVCardContact(rawText: string): ScannedContact {
 
   const fullName = firstField(fields, "FN") || parseStructuredVCardName(firstField(fields, "N"));
   const organization = firstField(fields, "ORG")?.split(";")[0] ?? "";
+  const email = firstField(fields, "EMAIL");
 
   return {
     companyName: normalizeWhitespace(organization),
     participants: fullName ? [normalizeWhitespace(fullName)] : [],
+    contacts: fullName
+      ? [createContactPersonFromName(fullName, normalizeWhitespace(organization), normalizeWhitespace(email))]
+      : [],
     rawText,
   };
 }
@@ -119,10 +141,13 @@ function parseUrlContact(rawText: string): ScannedContact {
     const fullName =
       readParam(params, fullNameKeys) ||
       combineName(readParam(params, firstNameKeys), readParam(params, lastNameKeys));
+    const companyName = readParam(params, companyKeys);
+    const email = readParam(params, ["email", "emailAddress", "email_address", "workEmail"]);
 
     return {
-      companyName: readParam(params, companyKeys),
+      companyName,
       participants: fullName ? [fullName] : [],
+      contacts: fullName ? [createContactPersonFromName(fullName, companyName, email)] : [],
       rawText,
     };
   } catch {
@@ -159,6 +184,7 @@ function parsePlainTextContact(rawText: string): ScannedContact {
     return {
       companyName,
       participants: fullName ? [fullName] : [],
+      contacts: fullName ? [createContactPersonFromName(fullName, companyName)] : [],
       rawText,
     };
   }
@@ -167,6 +193,7 @@ function parsePlainTextContact(rawText: string): ScannedContact {
     return {
       companyName: "",
       participants: [lines[0]],
+      contacts: [createContactPersonFromName(lines[0], "")],
       rawText,
     };
   }
@@ -260,6 +287,83 @@ function uniqueStrings(items: string[]) {
   return Array.from(new Set(items.map(normalizeWhitespace).filter(Boolean)));
 }
 
+function uniqueContactPeople(contacts: Array<ScannedContactPerson | null>) {
+  const seenContacts = new Set<string>();
+
+  return contacts
+    .filter((contact): contact is ScannedContactPerson => contact !== null)
+    .map((contact) => ({
+      firstName: normalizeWhitespace(contact.firstName),
+      lastName: normalizeWhitespace(contact.lastName),
+      companyName: normalizeWhitespace(contact.companyName),
+      email: normalizeWhitespace(contact.email),
+    }))
+    .filter((contact) => combineName(contact.firstName, contact.lastName) || contact.companyName || contact.email)
+    .filter((contact) => {
+      const key = [
+        contact.firstName.toLocaleLowerCase(),
+        contact.lastName.toLocaleLowerCase(),
+        contact.companyName.toLocaleLowerCase(),
+        contact.email.toLocaleLowerCase(),
+      ].join("|");
+
+      if (seenContacts.has(key)) {
+        return false;
+      }
+
+      seenContacts.add(key);
+
+      return true;
+    });
+}
+
+function createContactPersonFromName(
+  fullName: string,
+  companyName: string,
+  email = "",
+  firstNameHint = "",
+  lastNameHint = "",
+): ScannedContactPerson {
+  const parsedName = splitFullName(fullName);
+
+  return createContactPerson(
+    firstNameHint || parsedName.firstName,
+    lastNameHint || parsedName.lastName,
+    companyName,
+    email,
+  );
+}
+
+function createContactPerson(
+  firstName: string,
+  lastName: string,
+  companyName: string,
+  email = "",
+): ScannedContactPerson {
+  return {
+    firstName,
+    lastName,
+    companyName,
+    email,
+  };
+}
+
+function splitFullName(fullName: string) {
+  const parts = normalizeWhitespace(fullName).split(" ").filter(Boolean);
+
+  if (parts.length <= 1) {
+    return {
+      firstName: parts[0] ?? "",
+      lastName: "",
+    };
+  }
+
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts[parts.length - 1] ?? "",
+  };
+}
+
 function normalizeWhitespace(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
@@ -276,6 +380,7 @@ function emptyContact(rawText: string): ScannedContact {
   return {
     companyName: "",
     participants: [],
+    contacts: [],
     rawText,
   };
 }

@@ -12,6 +12,8 @@ import { downloadCalendarEvent } from "../calendar";
 import {
   DEFAULT_PLATFORM_OPTIONS,
   FEATURE_OPTIONS,
+  getContactDisplayName,
+  normalizeContacts,
   normalizeStringList,
   type FeatureInterest,
   type InteractionDraft,
@@ -57,17 +59,17 @@ export function AddInteractionScreen({
     });
   }
 
-  function updateParticipant(index: number, value: string) {
+  function updateContactEmail(index: number, email: string) {
     updateDraft({
-      participants: draft.participants.map((participant, participantIndex) =>
-        participantIndex === index ? value : participant,
+      contacts: draft.contacts.map((contact, contactIndex) =>
+        contactIndex === index ? { ...contact, email } : contact,
       ),
     });
   }
 
-  function removeParticipant(index: number) {
+  function removeContact(index: number) {
     updateDraft({
-      participants: draft.participants.filter((_, participantIndex) => participantIndex !== index),
+      contacts: draft.contacts.filter((_, contactIndex) => contactIndex !== index),
     });
   }
 
@@ -112,10 +114,13 @@ export function AddInteractionScreen({
     event.preventDefault();
 
     if (canSave) {
+      const contacts = normalizeContacts(draft.contacts);
+
       onSave({
         ...draft,
         companyName: normalizedCompanyName,
-        participants: normalizeStringList(draft.participants),
+        participants: normalizeStringList([...draft.participants, ...contacts.map(getContactDisplayName)]),
+        contacts,
         platformInterests: normalizeStringList(draft.platformInterests),
       });
     }
@@ -160,28 +165,45 @@ export function AddInteractionScreen({
           </div>
 
           <div className="mt-2 space-y-2">
-            {draft.participants.length > 0 ? (
-              draft.participants.map((participant, index) => (
-                <div className="flex items-center gap-2" key={`${participant}-${index}`}>
-                  <label className="sr-only" htmlFor={`participant-${index}`}>
-                    Participant {index + 1}
-                  </label>
-                  <input
-                    className="min-h-12 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-base text-slate-950 shadow-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    id={`participant-${index}`}
-                    onChange={(event) => updateParticipant(index, event.target.value)}
-                    value={participant}
-                  />
-                  <button
-                    aria-label={`Remove ${participant || `participant ${index + 1}`}`}
-                    className="flex h-12 w-12 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm"
-                    onClick={() => removeParticipant(index)}
-                    type="button"
+            {draft.contacts.length > 0 ? (
+              draft.contacts.map((contact, index) => {
+                const contactName = getContactDisplayName(contact) || "Unnamed contact";
+                const companyName = contact.companyName || draft.companyName || "Company not set";
+
+                return (
+                  <article
+                    className="grid min-h-20 grid-cols-[minmax(0,1fr)_minmax(8.75rem,44%)] items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 shadow-sm"
+                    key={contact.id}
                   >
-                    <Trash2 aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
-                  </button>
-                </div>
-              ))
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-semibold text-slate-950">{contactName}</h3>
+                      <p className="mt-1 truncate text-sm font-medium text-slate-500">{companyName}</p>
+                    </div>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <label className="sr-only" htmlFor={`contact-email-${contact.id}`}>
+                        Email for {contactName}
+                      </label>
+                      <input
+                        className="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                        id={`contact-email-${contact.id}`}
+                        inputMode="email"
+                        onChange={(event) => updateContactEmail(index, event.target.value)}
+                        placeholder="email"
+                        type="email"
+                        value={contact.email}
+                      />
+                      <button
+                        aria-label={`Remove ${contactName}`}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm"
+                        onClick={() => removeContact(index)}
+                        type="button"
+                      >
+                        <Trash2 aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
             ) : (
               <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
                 No participants scanned.

@@ -27,7 +27,7 @@ The scanner preview is currently implemented inline in the Scan QR Code screen.
 The Add Interaction form currently implements these controls inline:
 
 - Editable company input.
-- Editable participant rows with remove icon buttons.
+- Contact tiles with first/last header text, company subtitle, right-aligned email textbox, and remove icon button.
 - Feature interest pill checkboxes.
 - Platform search, add button, and checkbox list.
 - Calendar export and Done action buttons.
