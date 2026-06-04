@@ -36,7 +36,7 @@ export default function App() {
   );
   const [view, setView] = useState<AppView>({ name: "home" });
   const availablePlatformOptions = useMemo(
-    () => normalizeStringList(customPlatformOptions).map((option) => option.toLocaleLowerCase()),
+    () => normalizeStringList(customPlatformOptions),
     [customPlatformOptions],
   );
 
@@ -134,15 +134,13 @@ export default function App() {
   }
 
   function handleAddPlatformOption(option: string) {
-    const normalizedOption = option.trim().toLocaleLowerCase();
+    const normalizedOption = option.trim();
 
     if (!normalizedOption) {
       return;
     }
 
-    const nextOptions = normalizeStringList([...customPlatformOptions, normalizedOption]).map((item) =>
-      item.toLocaleLowerCase(),
-    );
+    const nextOptions = normalizeStringList([...customPlatformOptions, normalizedOption]);
 
     setCustomPlatformOptions(nextOptions);
     storeCustomPlatformOptions(nextOptions);

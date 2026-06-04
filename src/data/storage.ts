@@ -9,7 +9,9 @@ import {
 
 const INTERACTIONS_STORAGE_KEY = "scanner.interactions.v1";
 const CUSTOM_PLATFORM_OPTIONS_STORAGE_KEY = "scanner.customPlatformOptions.v1";
-const defaultPlatformSet = new Set<string>(DEFAULT_PLATFORM_OPTIONS);
+const defaultPlatformSet = new Set<string>(
+  DEFAULT_PLATFORM_OPTIONS.map((option) => option.toLocaleLowerCase()),
+);
 
 export function loadInteractions() {
   if (!isStorageAvailable()) {
@@ -64,9 +66,9 @@ export function loadCustomPlatformOptions() {
       return [];
     }
 
-    return normalizeStringList(parsedValue.filter((item) => typeof item === "string"))
-      .map((item) => item.toLocaleLowerCase())
-      .filter((item) => !defaultPlatformSet.has(item));
+    return normalizeStringList(parsedValue.filter((item) => typeof item === "string")).filter(
+      (item) => !defaultPlatformSet.has(item.toLocaleLowerCase()),
+    );
   } catch {
     return [];
   }
@@ -80,9 +82,9 @@ export function storeCustomPlatformOptions(options: string[]) {
   window.localStorage.setItem(
     CUSTOM_PLATFORM_OPTIONS_STORAGE_KEY,
     JSON.stringify(
-      normalizeStringList(options)
-        .map((item) => item.toLocaleLowerCase())
-        .filter((item) => !defaultPlatformSet.has(item)),
+      normalizeStringList(options).filter(
+        (item) => !defaultPlatformSet.has(item.toLocaleLowerCase()),
+      ),
     ),
   );
 }

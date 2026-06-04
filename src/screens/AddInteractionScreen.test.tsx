@@ -179,7 +179,8 @@ describe("AddInteractionScreen", () => {
 
     await user.click(screen.getByRole("checkbox", { name: "ETL" }));
     await user.click(screen.getByRole("checkbox", { name: "terraform" }));
-    await user.click(screen.getByRole("checkbox", { name: "snowflake" }));
+    await user.type(screen.getByPlaceholderText("Search integrations"), "Snowflake");
+    await user.click(screen.getByRole("button", { name: "Snowflake" }));
     await user.click(screen.getByRole("button", { name: "Done" }));
 
     expect(onSave).toHaveBeenCalledWith(
@@ -187,12 +188,12 @@ describe("AddInteractionScreen", () => {
         companyName: "ExampleCo",
         participants: ["First Last"],
         features: ["ETL", "terraform"],
-        platformInterests: ["snowflake"],
+        platformInterests: ["Snowflake"],
       }),
     );
   });
 
-  it("adds a custom integration via the Other field", async () => {
+  it("adds a custom integration via search", async () => {
     const user = userEvent.setup();
     const onAddPlatformOption = vi.fn();
 
@@ -205,12 +206,28 @@ describe("AddInteractionScreen", () => {
       onAddPlatformOption,
     );
 
-    const integrationGroup = screen.getByRole("group", { name: "Integration interest" });
-    await user.click(within(integrationGroup).getByRole("button", { name: "Other" }));
-    await user.type(screen.getByPlaceholderText("Add an integration"), "oracle");
-    await user.click(screen.getByRole("button", { name: "Add integration" }));
+    await user.type(screen.getByPlaceholderText("Search integrations"), "Acme Lake");
+    await user.click(screen.getByRole("button", { name: 'Add "Acme Lake"' }));
 
-    expect(onAddPlatformOption).toHaveBeenCalledWith("oracle");
-    expect(screen.getByRole("checkbox", { name: "oracle" })).toBeChecked();
+    expect(onAddPlatformOption).toHaveBeenCalledWith("Acme Lake");
+    expect(screen.getByRole("button", { name: "Remove Acme Lake" })).toBeInTheDocument();
+  });
+
+  it("selects an existing integration from search results", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+
+    renderHarness({ ...createEmptyInteractionDraft(), companyName: "ExampleCo" }, onSave);
+
+    await user.type(screen.getByPlaceholderText("Search integrations"), "snow");
+    await user.click(screen.getByRole("button", { name: "Snowflake" }));
+
+    expect(screen.getByRole("button", { name: "Remove Snowflake" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ platformInterests: ["Snowflake"] }),
+    );
   });
 });

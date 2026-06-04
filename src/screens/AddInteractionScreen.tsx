@@ -7,6 +7,7 @@ import {
   Plus,
   Trash2,
   UserPlus,
+  X,
 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -48,7 +49,6 @@ export function AddInteractionScreen({
   const [calendarStatus, setCalendarStatus] = useState("");
   const [featureQuery, setFeatureQuery] = useState("");
   const [isAddingFeature, setIsAddingFeature] = useState(false);
-  const [isAddingPlatform, setIsAddingPlatform] = useState(false);
   const customFeatures = draft.features.filter((feature) => !KNOWN_FEATURES.has(feature));
   const normalizedCompanyName = draft.companyName.trim();
   const canSave = normalizedCompanyName.length > 0;
@@ -70,20 +70,19 @@ export function AddInteractionScreen({
         ...DEFAULT_PLATFORM_OPTIONS,
         ...availablePlatformOptions,
         ...draft.platformInterests,
-      ]).map((option) => option.toLocaleLowerCase()),
+      ]),
     [availablePlatformOptions, draft.platformInterests],
   );
-  // Selected integrations float to the front (stable within each group).
-  const sortedPlatformOptions = useMemo(
-    () =>
-      [...allPlatformOptions].sort((first, second) => {
-        const firstSelected = draft.platformInterests.includes(first) ? 0 : 1;
-        const secondSelected = draft.platformInterests.includes(second) ? 0 : 1;
-
-        return firstSelected - secondSelected;
-      }),
-    [allPlatformOptions, draft.platformInterests],
-  );
+  const normalizedPlatformQuery = platformQuery.trim().toLocaleLowerCase();
+  const matchingPlatformOptions = normalizedPlatformQuery
+    ? allPlatformOptions
+        .filter((option) => !draft.platformInterests.includes(option))
+        .filter((option) => option.toLocaleLowerCase().includes(normalizedPlatformQuery))
+        .slice(0, 8)
+    : [];
+  const canAddCustomPlatform =
+    normalizedPlatformQuery.length > 0 &&
+    !allPlatformOptions.some((option) => option.toLocaleLowerCase() === normalizedPlatformQuery);
 
   function updateDraft(updates: Partial<InteractionDraft>) {
     onChange({
@@ -139,8 +138,16 @@ export function AddInteractionScreen({
     });
   }
 
+  function selectPlatform(platform: string) {
+    if (!draft.platformInterests.includes(platform)) {
+      updateDraft({ platformInterests: [...draft.platformInterests, platform] });
+    }
+
+    setPlatformQuery("");
+  }
+
   function addPlatformFromQuery() {
-    const platform = platformQuery.trim().toLocaleLowerCase();
+    const platform = platformQuery.trim();
 
     if (platform) {
       onAddPlatformOption(platform);
@@ -150,7 +157,6 @@ export function AddInteractionScreen({
     }
 
     setPlatformQuery("");
-    setIsAddingPlatform(false);
   }
 
   function handleGoogleCalendarOpen() {
@@ -365,71 +371,77 @@ export function AddInteractionScreen({
 
         <fieldset className="mt-6">
           <legend className="text-sm font-semibold text-slate-700">Integration interest</legend>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {sortedPlatformOptions.map((platform) => {
-              const isSelected = draft.platformInterests.includes(platform);
 
-              return (
-                <label
-                  className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-full border px-3 text-sm font-semibold ${
-                    isSelected
-                      ? "border-emerald-600 bg-emerald-50 text-emerald-800"
-                      : "border-slate-200 bg-white text-slate-700"
-                  }`}
+          {draft.platformInterests.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {draft.platformInterests.map((platform) => (
+                <button
+                  aria-label={`Remove ${platform}`}
+                  className="flex min-h-9 items-center gap-1.5 rounded-full border border-emerald-600 bg-emerald-50 px-3 text-sm font-semibold text-emerald-800"
                   key={platform}
+                  onClick={() => togglePlatform(platform)}
+                  type="button"
                 >
-                  <input
-                    checked={isSelected}
-                    className="sr-only"
-                    onChange={() => togglePlatform(platform)}
-                    type="checkbox"
-                  />
-                  {isSelected ? <Check aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} /> : null}
                   {platform}
-                </label>
-              );
-            })}
-
-            <button
-              aria-expanded={isAddingPlatform}
-              className="flex min-h-10 items-center gap-2 rounded-full border border-dashed border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600"
-              onClick={() => setIsAddingPlatform((value) => !value)}
-              type="button"
-            >
-              <Plus aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
-              Other
-            </button>
-          </div>
-
-          {isAddingPlatform ? (
-            <div className="mt-2 flex gap-2">
-              <label className="min-w-0 flex-1">
-                <span className="sr-only">Other integration</span>
-                <input
-                  autoFocus
-                  className="min-h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-base text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                  onChange={(event) => setPlatformQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      addPlatformFromQuery();
-                    }
-                  }}
-                  placeholder="Add an integration"
-                  value={platformQuery}
-                />
-              </label>
-              <button
-                aria-label="Add integration"
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm disabled:text-slate-300"
-                disabled={!platformQuery.trim()}
-                onClick={addPlatformFromQuery}
-                type="button"
-              >
-                <Plus aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
-              </button>
+                  <X aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.5} />
+                </button>
+              ))}
             </div>
           ) : null}
+
+          <div className="mt-2">
+            <label className="block">
+              <span className="sr-only">Search integrations</span>
+              <input
+                className="min-h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-base text-slate-950 shadow-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                onChange={(event) => setPlatformQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") {
+                    return;
+                  }
+
+                  event.preventDefault();
+
+                  if (matchingPlatformOptions.length > 0) {
+                    selectPlatform(matchingPlatformOptions[0]);
+                  } else if (canAddCustomPlatform) {
+                    addPlatformFromQuery();
+                  }
+                }}
+                placeholder="Search integrations"
+                type="search"
+                value={platformQuery}
+              />
+            </label>
+
+            {normalizedPlatformQuery ? (
+              <div className="mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+                {matchingPlatformOptions.map((option) => (
+                  <button
+                    className="flex min-h-11 w-full items-center px-3 text-left text-sm font-medium text-slate-800 hover:bg-slate-50"
+                    key={option}
+                    onClick={() => selectPlatform(option)}
+                    type="button"
+                  >
+                    {option}
+                  </button>
+                ))}
+                {canAddCustomPlatform ? (
+                  <button
+                    className="flex min-h-11 w-full items-center gap-2 border-t border-slate-100 px-3 text-left text-sm font-medium text-emerald-700 hover:bg-slate-50"
+                    onClick={addPlatformFromQuery}
+                    type="button"
+                  >
+                    <Plus aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
+                    {`Add "${platformQuery.trim()}"`}
+                  </button>
+                ) : null}
+                {matchingPlatformOptions.length === 0 && !canAddCustomPlatform ? (
+                  <p className="px-3 py-2 text-sm text-slate-400">Already added.</p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </fieldset>
 
         <div className="mt-6 space-y-3">
