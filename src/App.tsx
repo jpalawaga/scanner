@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+  createDraftFromInteraction,
   createEmptyInteractionDraft,
   createInteractionContact,
   createInteractionFromDraft,
@@ -24,8 +25,8 @@ import { ScanScreen } from "./screens/ScanScreen";
 
 type AppView =
   | { name: "home" }
-  | { name: "scan"; mode: "new" | "participant"; returnDraft: InteractionDraft }
-  | { name: "add"; draft: InteractionDraft };
+  | { name: "scan"; mode: "new" | "participant"; returnDraft: InteractionDraft; editingId?: string }
+  | { name: "add"; draft: InteractionDraft; editingId?: string };
 
 export default function App() {
   const [interactions, setInteractions] = useState<Interaction[]>(() => loadInteractions());
@@ -54,6 +55,14 @@ export default function App() {
     });
   }
 
+  function startEditInteraction(interaction: Interaction) {
+    setView({
+      name: "add",
+      draft: createDraftFromInteraction(interaction),
+      editingId: interaction.id,
+    });
+  }
+
   function handleScan(rawText: string) {
     if (view.name !== "scan") {
       return;
@@ -62,7 +71,7 @@ export default function App() {
     const scannedContact = parseQrContact(rawText);
     const draft = mergeScannedContact(view.returnDraft, scannedContact, rawText);
 
-    setView({ name: "add", draft });
+    setView({ name: "add", draft, editingId: view.editingId });
     void enrichDraftContacts(draft);
   }
 
@@ -92,17 +101,31 @@ export default function App() {
     );
   }
 
-  function handleScanParticipant(draft: InteractionDraft) {
+  function handleScanParticipant(draft: InteractionDraft, editingId?: string) {
     setView({
       name: "scan",
       mode: "participant",
       returnDraft: draft,
+      editingId,
     });
   }
 
   function handleSave(draft: InteractionDraft) {
-    const savedInteraction = createInteractionFromDraft(draft);
-    const nextInteractions = sortInteractionsReverseChronological([savedInteraction, ...interactions]);
+    const editingId = view.name === "add" ? view.editingId : undefined;
+    const existing = editingId
+      ? interactions.find((interaction) => interaction.id === editingId)
+      : undefined;
+    const savedInteraction = createInteractionFromDraft(
+      draft,
+      existing ? { id: existing.id, date: existing.date } : undefined,
+    );
+    const nextInteractions = sortInteractionsReverseChronological(
+      existing
+        ? interactions.map((interaction) =>
+            interaction.id === existing.id ? savedInteraction : interaction,
+          )
+        : [savedInteraction, ...interactions],
+    );
 
     setInteractions(nextInteractions);
     storeInteractions(nextInteractions);
@@ -128,7 +151,13 @@ export default function App() {
     return (
       <ScanScreen
         heading={view.mode === "new" ? "Scan QR code" : "Scan participant"}
-        onBack={() => setView(view.mode === "new" ? { name: "home" } : { name: "add", draft: view.returnDraft })}
+        onBack={() =>
+          setView(
+            view.mode === "new"
+              ? { name: "home" }
+              : { name: "add", draft: view.returnDraft, editingId: view.editingId },
+          )
+        }
         onScan={handleScan}
       />
     );
@@ -141,9 +170,9 @@ export default function App() {
         draft={view.draft}
         onAddPlatformOption={handleAddPlatformOption}
         onBack={() => setView({ name: "home" })}
-        onChange={(draft) => setView({ name: "add", draft })}
+        onChange={(draft) => setView({ name: "add", draft, editingId: view.editingId })}
         onSave={handleSave}
-        onScanParticipant={() => handleScanParticipant(view.draft)}
+        onScanParticipant={() => handleScanParticipant(view.draft, view.editingId)}
       />
     );
   }
@@ -151,6 +180,7 @@ export default function App() {
   return (
     <HomeScreen
       interactions={interactions}
+      onEditInteraction={startEditInteraction}
       onManualInteraction={startManualInteraction}
       onNewInteraction={startNewInteractionScan}
     />

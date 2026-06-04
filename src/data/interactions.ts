@@ -72,18 +72,36 @@ export function createEmptyInteractionDraft(): InteractionDraft {
   };
 }
 
-export function createInteractionFromDraft(draft: InteractionDraft): Interaction {
+// When `base` is provided (editing an existing interaction), its id and date
+// are preserved; otherwise a fresh id and the current timestamp are used.
+export function createInteractionFromDraft(
+  draft: InteractionDraft,
+  base?: Pick<Interaction, "id" | "date">,
+): Interaction {
   const contacts = normalizeContacts(draft.contacts);
 
   return {
-    id: createInteractionId(),
+    id: base?.id ?? createInteractionId(),
     companyName: draft.companyName.trim(),
     participants: normalizeStringList([...draft.participants, ...contacts.map(getContactDisplayName)]),
     contacts,
-    date: new Date().toISOString(),
+    date: base?.date ?? new Date().toISOString(),
     meetingSet: draft.calendarEventCreated,
     features: normalizeStringList(draft.features),
     platformInterests: normalizeStringList(draft.platformInterests),
+  };
+}
+
+export function createDraftFromInteraction(interaction: Interaction): InteractionDraft {
+  return {
+    companyName: interaction.companyName,
+    participants: [...interaction.participants],
+    contacts: interaction.contacts.map((contact) => ({ ...contact })),
+    features: [...interaction.features],
+    platformInterests: [...interaction.platformInterests],
+    calendarEventCreated: interaction.meetingSet,
+    scannedRawCodes: [],
+    enrichmentEnabled: true,
   };
 }
 

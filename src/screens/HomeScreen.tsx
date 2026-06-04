@@ -6,6 +6,7 @@ type HomeScreenProps = {
   interactions?: Interaction[];
   onNewInteraction?: () => void;
   onManualInteraction?: () => void;
+  onEditInteraction?: (interaction: Interaction) => void;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -35,6 +36,7 @@ export function HomeScreen({
   interactions = defaultInteractions,
   onNewInteraction,
   onManualInteraction,
+  onEditInteraction,
 }: HomeScreenProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -106,7 +108,13 @@ export function HomeScreen({
             <ul className="divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               {filteredInteractions.map((interaction) => (
                 <li key={interaction.id}>
-                  <article className="flex min-h-20 w-full items-center gap-4 px-4 py-3">
+                  <button
+                    aria-label={`Edit interaction with ${interaction.companyName}`}
+                    className="flex min-h-20 w-full items-center gap-4 px-4 py-3 text-left hover:bg-slate-50"
+                    disabled={!onEditInteraction}
+                    onClick={() => onEditInteraction?.(interaction)}
+                    type="button"
+                  >
                     <div className="min-w-0 flex-1">
                       <h2 className="truncate text-base font-semibold text-slate-950">
                         {interaction.companyName}
@@ -123,7 +131,7 @@ export function HomeScreen({
                       ) : null}
                       <time dateTime={interaction.date}>{formatInteractionDate(interaction.date)}</time>
                     </div>
-                  </article>
+                  </button>
                 </li>
               ))}
             </ul>

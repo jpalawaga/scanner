@@ -33,6 +33,25 @@ describe("HomeScreen", () => {
     expect(onNewInteraction).toHaveBeenCalledTimes(1);
   });
 
+  it("opens an interaction for editing when its tile is clicked", async () => {
+    const user = userEvent.setup();
+    const onEditInteraction = vi.fn();
+
+    render(
+      <HomeScreen
+        onNewInteraction={vi.fn()}
+        onEditInteraction={onEditInteraction}
+        interactions={[buildInteraction({ companyName: "Snowflake" })]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Edit interaction with Snowflake" }));
+
+    expect(onEditInteraction).toHaveBeenCalledWith(
+      expect.objectContaining({ companyName: "Snowflake" }),
+    );
+  });
+
   it("renders interaction tiles with company, participants, date, and meeting marker", () => {
     render(
       <HomeScreen
